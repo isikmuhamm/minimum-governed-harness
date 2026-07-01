@@ -67,6 +67,7 @@ Open design work belongs in `NOTES.md`. When a decision is accepted and implemen
 - Keep stable architecture truth in System.
 - Do not duplicate full decision text across files.
 - Treat raw external handoffs as non-canonical staging inputs.
+- Maintain task-linked code trace when a task creates or changes a durable behavior boundary.
 - Prefer one small, reversible, verifiable implementation slice.
 - Do not broaden scope silently.
 - Do not claim completion without evidence.
@@ -86,6 +87,33 @@ The adoption step must:
 6. run canonical verification before moving or removing the source package.
 
 Do not implement directly from a raw package while bypassing Board and Notes. The package is source evidence; local records become the governed working context.
+
+## Task-linked code trace
+
+Use a short language-native comment to connect durable implementation boundaries back to the local task context:
+
+```text
+ContextRail: TASK-####
+Invariant: <the current behavior or constraint that must remain true>
+```
+
+The task record carries the full rationale, related requirements, decisions, risks, acceptance criteria, and evidence. The comment is a pointer and a concise protection against incorrect local changes; it is not a second specification or a substitute for Git history.
+
+Add or update a trace when a task:
+
+- creates a function, method, class, module, handler, policy, procedure, resource, migration, or principal test whose existence is explained by a durable behavior or constraint;
+- changes the current external behavior, domain invariant, state transition, authorization or security boundary, ownership boundary, or deliberate compatibility exception;
+- introduces a small but important implementation boundary, even when the function or statement is short.
+
+Place the trace at the smallest stable scope governed by the task:
+
+- before a declaration when the complete symbol is governed by the task;
+- immediately before a block or statement when only that narrower behavior is governed;
+- before the principal regression test that proves the same invariant when the behavior is testable.
+
+Do not append every task that historically touched a function. Keep the task that best explains the current invariant. Replace the pointer when a later task materially changes that invariant; leave it unchanged for formatting, renaming, performance work, dependency adaptation, or bug fixes that preserve the same behavior contract. Independent current invariants may carry separate pointers at their own smallest scopes.
+
+During refactoring, move, split, update, or remove the trace together with the behavior it governs. Do not add fake fields to commentless formats, generated files, vendor code, lock files, or binaries; record those implementation boundaries in the task's Notes section instead.
 
 ## Root cause before patch
 
@@ -112,8 +140,9 @@ After implementation and before claiming completion:
 2. verify each acceptance criterion against code, tests, logs, or observable output;
 3. state what the tests prove and what they do not prove;
 4. check edge cases, failure paths, security implications, and relevant `SYSTEM.md` invariants;
-5. confirm documentation and project memory match actual behavior;
-6. do not use assumption, intention, or a passing unrelated test as evidence.
+5. confirm task-linked code traces still point to the correct current task and scope;
+6. confirm documentation and project memory match actual behavior;
+7. do not use assumption, intention, or a passing unrelated test as evidence.
 
 ## Incidental findings
 
@@ -160,7 +189,7 @@ On the first substantive coding task, discover the existing native verification 
 
 The canonical verification command should run the relevant project tests, build, lint, static analysis, scenario or smoke checks, and ContextRail validation as appropriate. Do not create a second parallel test system when an established verification entrypoint already exists.
 
-The ContextRail validator checks project-memory governance only. It does not replace native project tests.
+The ContextRail validator checks project-memory governance and task-linked code-reference integrity only. It does not replace native project tests.
 
 ## Creating work
 
