@@ -1,14 +1,14 @@
 # History
 
-The canonical record of completed or cancelled tasks.
+History is the canonical record of completed or cancelled tasks.
 
 Allowed statuses: `completed`, `cancelled`.
 
-Do not keep a completed task in Board. Include concrete evidence whenever possible.
+Do not keep a completed task in `BOARD.md`. Include concrete evidence whenever possible.
 
 ## TASK-0000 — Bootstrap Minimum Governed Harness
 - Status: completed
 - Completed: 2026-06-28
 - Related: DEC-0001
-- Evidence: `python scripts/validate_memory.py`
-- Outcome: Added the initial lifecycle files, agent guide, validator, tests, and CI workflow.
+- Evidence: Linux validator passed locally; GitHub Actions validates Linux, macOS, Windows, and rejects the invalid fixture.
+- Outcome: Added the system map, Board, Notes, History, canonical agent guide, tool adapters, dependency-free platform validators, negative fixture, and cross-platform CI.

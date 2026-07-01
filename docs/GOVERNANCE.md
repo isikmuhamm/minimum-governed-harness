@@ -1,49 +1,64 @@
 # Governance Contract
 
-Markdown makes project memory visible. Governance keeps it from decaying.
+Minimum Governed Harness separates current system truth, work state, reasoning, and evidence.
 
-## Responsibilities
+## System
 
-### Board
+`project-memory/SYSTEM.md` answers: **What is the implemented system now?**
 
-Answers: **What unfinished work exists now?**
+It contains a concise map of purpose, components, flows, boundaries, invariants, external interfaces, and current limits. It excludes open tasks, chronological logs, unresolved debates, and speculative future architecture.
 
-Contains only `TASK-####` records with `proposed`, `active`, or `blocked` status. Entries remain short.
+## Board
 
-### Notes
+`project-memory/BOARD.md` answers: **What unfinished work exists now?**
 
-Answers: **What does this work mean, why does it exist, and what has been decided?**
+It contains only `TASK-####` records with `proposed`, `active`, or `blocked` status. Board entries remain short.
 
-Contains matching task details and optional decision, requirement, and risk records. Notes may remain after completion as durable rationale.
+## Notes
 
-### History
+`project-memory/NOTES.md` answers: **What does this work mean, why does it exist, and what has been decided?**
 
-Answers: **What was completed or cancelled, and what evidence supports it?**
+It may contain task detail, decisions, requirements, risks, and unresolved design work. Accepted and implemented decisions are summarized as current truth in System; Notes retain the rationale.
 
-Contains only task records with `completed` or `cancelled` status.
+## History
+
+`project-memory/HISTORY.md` answers: **What was completed or cancelled, and what evidence supports that state?**
+
+It contains only task records with `completed` or `cancelled` status.
+
+## Lifecycle
+
+```text
+proposed -> active -> blocked -> active -> completed
+                \-> cancelled
+```
+
+The stable identity does not change when priority, milestone, owner, or status changes.
 
 ## Canonical ownership
 
-- Unfinished status: Board.
-- Task detail and rationale: Notes.
-- Completion evidence: History.
-- Runtime truth: source code and tests.
-- Public promise: README and user-facing docs.
+- current architecture and boundaries: System,
+- unfinished task state: Board,
+- task detail and rationale: Notes,
+- completion and cancellation evidence: History,
+- runtime behavior: source code and native tests,
+- public promise: README and user-facing documentation,
+- agent workflow: AGENTS.
 
-A task may appear in Board and Notes because they have different responsibilities. It must not appear in Board and History at the same time.
+A task may appear in Board and Notes because they serve different roles. A task must not appear in Board and History simultaneously.
 
 ## Search before create
 
-Before adding a record, search exact terms, synonyms, likely IDs, and similar active titles. Create a new identity only when the work has a different acceptance condition and can be completed independently.
+Search exact and related terms, likely IDs, and similar active tasks. Update an existing record when it describes the same work. A new identity is justified when the work has an independent acceptance condition.
 
 ## Atomic completion
 
-Update implementation, tests, Board, Notes, History, public docs, and validator result as one logical change.
+Complete implementation, native tests, Board removal, Notes update, History evidence, System updates, public docs, and OS-specific harness validation together.
 
-## When to add another file
+## Adapter governance
 
-Split only when there is a strong boundary: separate owner, security boundary, different lifecycle, independent reuse, or enough size/search noise to harm targeted access. Length alone is not sufficient.
+`AGENTS.md` is the only canonical agent instruction file. Tool-specific files must remain pointers; duplicating rules across adapters creates drift.
 
-## Validator semantics
+## When to add another memory file
 
-Errors break the contract. Warnings indicate a governance risk requiring judgment. Use `--strict` when warnings should block CI.
+Add one only when there is a separate owner, security boundary, lifecycle, independent reuse need, or enough search noise to harm targeted retrieval. Do not split merely because a section is long.

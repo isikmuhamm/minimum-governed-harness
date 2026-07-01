@@ -2,7 +2,13 @@
 
 ## New repository
 
-Use this repository as a GitHub template, replace the sample records, adapt `AGENTS.md`, and add project-specific test commands.
+Use this repository as a GitHub template, then:
+
+1. replace the sample System, Board, Notes, and History content,
+2. adapt project-specific rules in `AGENTS.md`,
+3. keep adapter files as short redirects,
+4. add the project's own build and test commands to `AGENTS.md`,
+5. run the validator for the current operating system.
 
 ## Existing repository
 
@@ -10,19 +16,58 @@ Copy:
 
 ```text
 AGENTS.md
+CLAUDE.md
+GEMINI.md
 project-memory/
-scripts/validate_memory.py
+scripts/validate-linux.sh
+scripts/validate-macos.sh
+scripts/validate-windows.ps1
+.github/copilot-instructions.md
+.cursor/rules/00-agents.mdc
 .github/workflows/validate-memory.yml
 ```
 
-Migrate only what is needed to continue safely:
+Convert existing information by role:
 
-- unfinished work to Board;
-- task detail and durable rationale to Notes;
-- completed work and evidence to History.
+- current implemented architecture and boundaries -> `SYSTEM.md`,
+- unfinished tasks -> `BOARD.md`,
+- task detail and durable rationale -> `NOTES.md`,
+- completed work and verification -> `HISTORY.md`.
 
-Do not migrate every historical note on day one.
+Do not migrate every historical note on day one. Start with the current system map, active work, and decisions needed to continue safely.
 
-## Folder naming
+## Validation commands
 
-`project-memory/` is domain-neutral. It may be renamed to `business/`, `planning/`, or another existing canonical folder. Update AGENTS, validator configuration, CI, and documentation paths together.
+Linux:
+
+```sh
+sh scripts/validate-linux.sh --strict
+```
+
+macOS:
+
+```sh
+sh scripts/validate-macos.sh --strict
+```
+
+Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Strict
+```
+
+No project-language runtime is required. The scripts use utilities included with the operating system.
+
+## Gradual adoption
+
+The smallest useful adoption is:
+
+```text
+SYSTEM.md
+BOARD.md
+NOTES.md
+HISTORY.md
+AGENTS.md
+```
+
+Avoid semantic search, graph databases, orchestration, or file-per-feature structures before measured need appears.

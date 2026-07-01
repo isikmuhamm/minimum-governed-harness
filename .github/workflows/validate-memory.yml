@@ -1,14 +1,52 @@
 name: Validate project memory
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
 permissions:
   contents: read
+
 jobs:
-  validate:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: python -m unittest discover -s tests -v
-      - run: python scripts/validate_memory.py
+      - name: Validate repository on Linux
+        run: sh scripts/validate-linux.sh --strict
+      - name: Confirm invalid fixture is rejected
+        run: |
+          if sh scripts/validate-linux.sh --root tests/fixtures/invalid; then
+            echo "Invalid fixture unexpectedly passed"
+            exit 1
+          fi
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository on macOS
+        run: sh scripts/validate-macos.sh --strict
+      - name: Confirm invalid fixture is rejected
+        run: |
+          if sh scripts/validate-macos.sh --root tests/fixtures/invalid; then
+            echo "Invalid fixture unexpectedly passed"
+            exit 1
+          fi
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository on Windows
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Strict
+      - name: Confirm invalid fixture is rejected
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Root tests\fixtures\invalid
+          if ($LASTEXITCODE -eq 0) {
+            Write-Error "Invalid fixture unexpectedly passed"
+            exit 1
+          }
+          exit 0
