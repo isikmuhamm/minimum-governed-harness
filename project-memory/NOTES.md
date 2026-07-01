@@ -67,7 +67,7 @@ ContextRail governed project-local work after it entered the repository, but it 
 The clean template now includes generic handoff staging and adoption guidance, task-linked code trace rules, positive implementation/test mapping fixtures, and cross-platform validators for title identity, orphan records, code-pointer integrity, and nearby invariant text. Pull-request Actions run `28544540035` passed all validation and exact failure-assertion steps on Linux, macOS, and Windows, along with the published-template version guard.
 
 ## TASK-0004 — Harden published version synchronization
-- Status: active
+- Status: completed
 - Related: DEC-0004
 - Last updated: 2026-07-01
 
@@ -81,6 +81,10 @@ The first `v1.0.0` release attempt correctly synchronized the visible template p
 - Verify the published worktree and staged blob both equal the declared release version before commit and push.
 - Preserve the existing fresh-clone and archive round-trip gates.
 - Re-run the same `v1.0.0` release only after pull-request validation succeeds.
+
+### Result
+
+The release workflow now explicitly installs and stages the version file, verifies both worktree and staged values, and confirms the fresh clone declares the requested release version. Pull-request Actions run `28545034563` passed Linux, macOS, Windows, and the published-template version guard.
 
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
