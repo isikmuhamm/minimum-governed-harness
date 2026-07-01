@@ -2,6 +2,17 @@
 
 All notable changes to ContextRail are documented here.
 
+## 1.0.0
+
+- Added a generic `handoffs/HANDOFF.md` adoption contract with `incoming/` and `processed/` staging directories.
+- Defined how external specifications, assessments, plans, and exports are deduplicated and converted into local Notes records and independently verifiable Board tasks before implementation.
+- Added a minimal language-native code trace contract using `ContextRail: TASK-####` plus a short current invariant.
+- Defined trace placement for complete symbols, narrow blocks, statements, and principal regression tests without storing full code history in comments.
+- Added validator checks for code markers that reference missing lifecycle or Notes records and for markers without a nearby non-empty invariant.
+- Added deterministic normalized-title checks that reject duplicate record identities and inconsistent titles for the same stable ID.
+- Added a valid implementation-and-test trace fixture and exact CI assertions for duplicate titles, orphan Notes details, and broken code pointers on Linux, macOS, and Windows.
+- Declared the four bounded memory roles, generic handoff intake, task-linked code trace, OS-native validation, canonical verification integration, and synchronized distribution as the stable ContextRail 1.0 contract.
+
 ## 0.5.0
 
 - Split the development repository from the clean user-project template distribution.
