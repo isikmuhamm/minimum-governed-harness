@@ -1,36 +1,141 @@
-param([string]$Root = "", [switch]$Strict)
+param(
+    [string]$Root = "",
+    [switch]$Strict
+)
+
 $ErrorActionPreference = "Stop"
-if (-not $Root) { $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path } else { $Root = (Resolve-Path $Root).Path }
-$Memory = Join-Path $Root "project-memory"
-$Errors = New-Object 'System.Collections.Generic.List[string]'
-$Warnings = New-Object 'System.Collections.Generic.List[string]'
-function Add-Error([string]$Message) { $Errors.Add($Message); Write-Error $Message -ErrorAction Continue }
-function Add-Warn([string]$Message) { $Warnings.Add($Message); Write-Warning $Message }
-$System = Join-Path $Memory "SYSTEM.md"; $Board = Join-Path $Memory "BOARD.md"; $Notes = Join-Path $Memory "NOTES.md"; $History = Join-Path $Memory "HISTORY.md"
-foreach ($File in @($System,$Board,$Notes,$History)) { if (-not (Test-Path $File -PathType Leaf)) { Add-Error "Missing required file: $File" } }
-if ($Errors.Count) { exit 1 }
-$Required = @("## Purpose and Scope","## Components","## Primary Flows","## Boundaries and Sources of Truth","## Invariants","## External Interfaces","## Known Limits")
-$SystemLines = Get-Content $System
-foreach ($Heading in $Required) { if ($SystemLines -cnotcontains $Heading) { Add-Error "SYSTEM.md missing section: $Heading" } }
-foreach ($Line in $SystemLines) { if ($Line -match '^## (TASK|DEC|REQ|RISK)-\d{4}(\s|$)') { Add-Error "SYSTEM.md must not contain lifecycle records: $Line" } }
-function Parse-Records([string]$Path) {
-  $Records = @(); $Current = $null
-  foreach ($Line in Get-Content $Path) {
-    if ($Line -match '^## ((TASK|DEC|REQ|RISK)-\d{4})\s+[—-]\s+(.+)$') { $Current = [ordered]@{ Id=$Matches[1]; Title=$Matches[3]; Status=""; Completed=""; Evidence=""; Related=@() }; $Records += $Current; continue }
-    if ($null -ne $Current -and $Line -match '^- Status:\s*(.+)$') { $Current.Status=$Matches[1].Trim().ToLower(); continue }
-    if ($null -ne $Current -and $Line -match '^- Completed:\s*(.+)$') { $Current.Completed=$Matches[1].Trim(); continue }
-    if ($null -ne $Current -and $Line -match '^- Evidence:\s*(.*)$') { $Current.Evidence=$Matches[1].Trim(); continue }
-    if ($null -ne $Current -and $Line -match '^- (Related|Supersedes|Replacement):\s*(.+)$') { $Current.Related += @([regex]::Matches($Matches[2],'(TASK|DEC|REQ|RISK)-\d{4}') | ForEach-Object { $_.Value }) }
-  }
-  return $Records
+if ([string]::IsNullOrWhiteSpace($Root)) {
+    $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+} else {
+    $Root = (Resolve-Path $Root).Path
 }
-$B = @(Parse-Records $Board); $N = @(Parse-Records $Notes); $H = @(Parse-Records $History)
-foreach ($Set in @(@('Board',$B),@('Notes',$N),@('History',$H))) { $Set[1] | Group-Object Id | Where-Object Count -gt 1 | ForEach-Object { Add-Error "Duplicate ID in $($Set[0]): $($_.Name)" } }
-foreach ($R in $B) { if ($R.Id -notmatch '^TASK-') { Add-Error "Board may contain only TASK records: $($R.Id)" }; if ($R.Status -notin @('proposed','active','blocked')) { Add-Error "$($R.Id) has invalid Board status: $($R.Status)" } }
-foreach ($R in $H) { if ($R.Id -notmatch '^TASK-') { Add-Error "History may contain only TASK records: $($R.Id)" }; if ($R.Status -notin @('completed','cancelled')) { Add-Error "$($R.Id) has invalid History status: $($R.Status)" }; if ($R.Status -eq 'completed' -and $R.Completed -notmatch '^\d{4}-\d{2}-\d{2}$') { Add-Error "$($R.Id) requires Completed: YYYY-MM-DD" }; if ($R.Status -eq 'completed' -and -not $R.Evidence) { Add-Warn "$($R.Id) has no Evidence" } }
-$BoardIds=@($B.Id); $HistoryIds=@($H.Id); $NoteTaskIds=@($N | Where-Object Id -like 'TASK-*' | ForEach-Object Id); $Known=@($B.Id+$N.Id+$H.Id | Sort-Object -Unique)
-foreach ($Id in $BoardIds) { if ($HistoryIds -contains $Id) { Add-Error "$Id exists in both BOARD.md and HISTORY.md" }; if ($NoteTaskIds -notcontains $Id) { Add-Warn "$Id is on the Board but has no Notes detail" } }
-foreach ($Id in $NoteTaskIds) { if (($BoardIds -notcontains $Id) -and ($HistoryIds -notcontains $Id)) { Add-Warn "$Id has Notes detail but no lifecycle record" } }
-foreach ($R in @($B+$N+$H)) { foreach ($Ref in $R.Related) { if ($Known -notcontains $Ref) { Add-Error "$($R.Id) references missing $Ref" } } }
-Write-Host "`nSummary: $($Errors.Count) error(s), $($Warnings.Count) warning(s)"
-if ($Errors.Count) { exit 1 }; if ($Strict -and $Warnings.Count) { exit 2 }; Write-Host "PASS  Project memory contract is valid"; exit 0
+
+$script:ErrorCount = 0
+$script:WarningCount = 0
+
+function Report-Error {
+    param([string]$Message)
+    $script:ErrorCount++
+    Write-Host "ERROR $Message" -ForegroundColor Red
+}
+
+function Report-Warning {
+    param([string]$Message)
+    $script:WarningCount++
+    Write-Host "WARN  $Message" -ForegroundColor Yellow
+}
+
+function Get-RecordIds {
+    param([string]$Path)
+    $Ids = @()
+    foreach ($Line in Get-Content -LiteralPath $Path) {
+        if ($Line -match '^## ((TASK|DEC|REQ|RISK)-[0-9]{4})[ ]') {
+            $Ids += $Matches[1]
+        }
+    }
+    return $Ids
+}
+
+$Memory = Join-Path $Root "project-memory"
+$SystemPath = Join-Path $Memory "SYSTEM.md"
+$BoardPath = Join-Path $Memory "BOARD.md"
+$NotesPath = Join-Path $Memory "NOTES.md"
+$HistoryPath = Join-Path $Memory "HISTORY.md"
+
+foreach ($Path in @($SystemPath, $BoardPath, $NotesPath, $HistoryPath)) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        Report-Error "Missing required file: $Path"
+    }
+}
+
+if ($script:ErrorCount -gt 0) { exit 1 }
+
+$SystemLines = Get-Content -LiteralPath $SystemPath
+$RequiredHeadings = @(
+    "## Purpose and Scope",
+    "## Components",
+    "## Primary Flows",
+    "## Boundaries and Sources of Truth",
+    "## Invariants",
+    "## External Interfaces",
+    "## Known Limits"
+)
+
+foreach ($Heading in $RequiredHeadings) {
+    if ($SystemLines -cnotcontains $Heading) {
+        Report-Error "SYSTEM.md missing section: $Heading"
+    }
+}
+
+foreach ($Line in $SystemLines) {
+    if ($Line -match '^## (TASK|DEC|REQ|RISK)-[0-9]{4}([ ]|$)') {
+        Report-Error "SYSTEM.md must not contain lifecycle records: $Line"
+    }
+}
+
+$BoardIds = @(Get-RecordIds $BoardPath)
+$NotesIds = @(Get-RecordIds $NotesPath)
+$HistoryIds = @(Get-RecordIds $HistoryPath)
+$NoteTaskIds = @($NotesIds | Where-Object { $_ -like 'TASK-*' })
+$KnownIds = @($BoardIds + $NotesIds + $HistoryIds | Sort-Object -Unique)
+
+foreach ($Group in @(
+    @{ Name = 'Board'; Ids = $BoardIds },
+    @{ Name = 'Notes'; Ids = $NotesIds },
+    @{ Name = 'History'; Ids = $HistoryIds }
+)) {
+    foreach ($Duplicate in @($Group.Ids | Group-Object | Where-Object { $_.Count -gt 1 })) {
+        Report-Error "Duplicate ID in $($Group.Name): $($Duplicate.Name)"
+    }
+}
+
+foreach ($Id in $BoardIds) {
+    if ($Id -notlike 'TASK-*') { Report-Error "Board may contain only TASK records: $Id" }
+    if ($HistoryIds -contains $Id) { Report-Error "$Id exists in both BOARD.md and HISTORY.md" }
+    if ($NoteTaskIds -notcontains $Id) { Report-Warning "$Id is on the Board but has no Notes detail" }
+}
+
+foreach ($Id in $HistoryIds) {
+    if ($Id -notlike 'TASK-*') { Report-Error "History may contain only TASK records: $Id" }
+}
+
+foreach ($Id in $NoteTaskIds) {
+    if (($BoardIds -notcontains $Id) -and ($HistoryIds -notcontains $Id)) {
+        Report-Warning "$Id has Notes detail but no lifecycle record"
+    }
+}
+
+$HistoryText = Get-Content -LiteralPath $HistoryPath -Raw
+if ($HistoryText -match '(?m)^- Status:[ ]*completed[ ]*$') {
+    if ($HistoryText -notmatch '(?m)^- Completed:[ ]*[0-9]{4}-[0-9]{2}-[0-9]{2}[ ]*$') {
+        Report-Error "Completed History record requires Completed: YYYY-MM-DD"
+    }
+    if ($HistoryText -notmatch '(?m)^- Evidence:[ ]*\S.+$') {
+        Report-Warning "Completed History record has no Evidence"
+    }
+}
+
+foreach ($Path in @($BoardPath, $NotesPath, $HistoryPath)) {
+    $CurrentId = ""
+    foreach ($Line in Get-Content -LiteralPath $Path) {
+        if ($Line -match '^## ((TASK|DEC|REQ|RISK)-[0-9]{4})[ ]') {
+            $CurrentId = $Matches[1]
+            continue
+        }
+        if (($CurrentId -ne "") -and ($Line -match '^- (Related|Supersedes|Replacement):[ ]*(.+)$')) {
+            foreach ($Match in [regex]::Matches($Matches[2], '(TASK|DEC|REQ|RISK)-[0-9]{4}')) {
+                if ($KnownIds -notcontains $Match.Value) {
+                    Report-Error "$CurrentId references missing $($Match.Value)"
+                }
+            }
+        }
+    }
+}
+
+Write-Host ""
+Write-Host "Summary: $($script:ErrorCount) error(s), $($script:WarningCount) warning(s)"
+
+if ($script:ErrorCount -gt 0) { exit 1 }
+if ($Strict -and $script:WarningCount -gt 0) { exit 2 }
+Write-Host "PASS  Project memory contract is valid" -ForegroundColor Green
+exit 0

@@ -2,6 +2,10 @@
 
 All notable changes to ContextRail are documented here.
 
+## Unreleased
+
+- Hardened the Windows validator for Windows PowerShell 5.1 compatibility.
+
 ## 0.4.0
 
 - Removed the Python/runtime dependency from harness validation.
