@@ -14,6 +14,7 @@ Tool-specific entry files such as `CLAUDE.md`, `GEMINI.md`, Copilot instructions
 - `project-memory/BOARD.md` — canonical unfinished work queue.
 - `project-memory/NOTES.md` — task detail, rationale, decisions, requirements, and risks.
 - `project-memory/HISTORY.md` — canonical completion and cancellation evidence.
+- `handoffs/HANDOFF.md` — canonical procedure for adopting external work packages into local records.
 - Source code and native project tests — canonical runtime behavior.
 - README and user-facing documentation — canonical public claims.
 
@@ -38,11 +39,12 @@ When ContextRail is newly added to an existing repository:
 2. Read this file.
 3. Read `project-memory/SYSTEM.md` once as the bounded system map.
 4. Read `project-memory/BOARD.md`.
-5. Select exactly one active or explicitly requested task.
-6. Search `project-memory/NOTES.md` by the exact task ID.
-7. Read only the matching Notes section and directly related records.
-8. Inspect only the code, tests, logs, and configuration needed for that task.
-9. Use the agent's native planner for implementation steps.
+5. If a package exists under `handoffs/incoming/`, or external handoff adoption was explicitly requested, read `handoffs/HANDOFF.md` and adopt the package into local records before implementation.
+6. Select exactly one active or explicitly requested task.
+7. Search `project-memory/NOTES.md` by the exact task ID.
+8. Read only the matching Notes section and directly related records.
+9. Inspect only the code, tests, logs, and configuration needed for that task.
+10. Use the agent's native planner for implementation steps.
 
 Do not read all of `HISTORY.md` by default. Search it by exact task or related ID only when prior implementation evidence is needed.
 
@@ -50,7 +52,7 @@ Do not read all of `HISTORY.md` by default. Search it by exact task or related I
 
 `SYSTEM.md` describes the system as it exists now.
 
-It may contain purpose and scope, components and ownership, primary flows, boundaries and sources of truth, invariants, external interfaces, and known limits.
+It may contain purpose and scope, components and ownership, primary flows, boundaries and sources of truth, invariants, interfaces, and known limits.
 
 It must not contain active tasks, implementation plans, chronological logs, unresolved design debates, or speculative future architecture presented as current truth.
 
@@ -64,10 +66,26 @@ Open design work belongs in `NOTES.md`. When a decision is accepted and implemen
 - Put detail and rationale in Notes.
 - Keep stable architecture truth in System.
 - Do not duplicate full decision text across files.
+- Treat raw external handoffs as non-canonical staging inputs.
 - Prefer one small, reversible, verifiable implementation slice.
 - Do not broaden scope silently.
 - Do not claim completion without evidence.
 - Do not assume another reviewer will catch mistakes.
+
+## External handoff adoption
+
+When a specification, assessment, plan, export, or other work package is placed under `handoffs/incoming/`, follow `handoffs/HANDOFF.md` before implementing it.
+
+The adoption step must:
+
+1. search current local records and relevant code before creating identities;
+2. preserve external source identifiers as provenance rather than using them as local identities;
+3. convert durable requirements, decisions, risks, rationale, acceptance criteria, and source evidence into `NOTES.md`;
+4. derive short local `TASK-####` Board entries only for independently verifiable unfinished outcomes;
+5. record conflicts instead of silently overriding implemented truth or accepted decisions;
+6. run canonical verification before moving or removing the source package.
+
+Do not implement directly from a raw package while bypassing Board and Notes. The package is source evidence; local records become the governed working context.
 
 ## Root cause before patch
 
