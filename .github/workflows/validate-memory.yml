@@ -1,4 +1,4 @@
-name: Validate project memory
+name: Validate ContextRail distribution
 
 on:
   push:
@@ -12,11 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate repository on Linux
-        run: sh scripts/validate-linux.sh --strict
+      - name: Validate clean template
+        run: sh template/scripts/validate-linux.sh --root template --strict
+      - name: Validate ContextRail repository memory
+        run: sh template/scripts/validate-linux.sh --root . --strict
       - name: Confirm invalid fixture is rejected
         run: |
-          if sh scripts/validate-linux.sh --root tests/fixtures/invalid; then
+          if sh template/scripts/validate-linux.sh --root tests/fixtures/invalid; then
             echo "Invalid fixture unexpectedly passed"
             exit 1
           fi
@@ -25,11 +27,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate repository on macOS
-        run: sh scripts/validate-macos.sh --strict
+      - name: Validate clean template
+        run: sh template/scripts/validate-macos.sh --root template --strict
+      - name: Validate ContextRail repository memory
+        run: sh template/scripts/validate-macos.sh --root . --strict
       - name: Confirm invalid fixture is rejected
         run: |
-          if sh scripts/validate-macos.sh --root tests/fixtures/invalid; then
+          if sh template/scripts/validate-macos.sh --root tests/fixtures/invalid; then
             echo "Invalid fixture unexpectedly passed"
             exit 1
           fi
@@ -38,13 +42,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate repository on Windows
+      - name: Validate clean template
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Strict
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root template -Strict
+      - name: Validate ContextRail repository memory
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root . -Strict
       - name: Confirm invalid fixture is rejected
         shell: powershell
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Root tests\fixtures\invalid
+          powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root tests\fixtures\invalid
           if ($LASTEXITCODE -eq 0) {
             Write-Error "Invalid fixture unexpectedly passed"
             exit 1

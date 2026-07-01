@@ -2,9 +2,17 @@
 
 All notable changes to ContextRail are documented here.
 
-## Unreleased
+## 0.5.0
 
-- Hardened the Windows validator for Windows PowerShell 5.1 compatibility.
+- Split the development repository from the clean user-project template distribution.
+- Added `template/` as the canonical source for the published `contextrail-template` repository.
+- Added root-cause-before-patch guidance to prevent accumulating input-specific guards and `if/else` exceptions.
+- Added independent self-review and evidence-grounded completion rules.
+- Added controlled handling for incidental bugs and risks without silent scope expansion.
+- Added first-adoption discovery and canonical verification integration.
+- Added required-field validation for Board, Notes, and History records.
+- Added a minimal template CI workflow while keeping validator development fixtures and three-OS testing in the source repository.
+- Hardened Windows validation for Windows PowerShell 5.1 compatibility.
 
 ## 0.4.0
 
@@ -18,16 +26,13 @@ All notable changes to ContextRail are documented here.
 
 - Added a cross-platform Python check runner and project-native check configuration.
 - Added Linux, Windows CMD, and PowerShell wrapper experiments.
-- Added validation tests for the check runner.
 
 ## 0.2.0
 
 - Added `SYSTEM.md` to separate implemented system truth from active work and design discussion.
-- Added system-map validation and decision-reflection governance.
 - Expanded adoption and governance documentation.
 
 ## 0.1.0
 
 - Added the initial `BOARD.md`, `NOTES.md`, and `HISTORY.md` lifecycle model.
 - Added the canonical `AGENTS.md` operating guide.
-- Added a dependency-free-in-project Python validator, tests, and GitHub Actions workflow.

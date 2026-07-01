@@ -1,0 +1,16 @@
+name: ContextRail memory validation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-memory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate project memory
+        run: sh scripts/validate-linux.sh --strict

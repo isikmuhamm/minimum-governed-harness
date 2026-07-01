@@ -2,46 +2,61 @@
 
 Task details, rationale, decisions, requirements, and risks.
 
-Search by exact ID. Do not read the entire file unless broad discovery is genuinely required.
-
-## TASK-0001 — Replace the sample with the first real task
-- Status: proposed
-- Related: none
-- Last updated: 2026-06-28
+## TASK-0001 — Publish ContextRail v0.5 clean template distribution
+- Status: completed
+- Related: DEC-0002, DEC-0003
+- Last updated: 2026-07-01
 
 ### Context
 
-Explain why the task exists and what problem it solves.
+The original repository was both the ContextRail product source and a GitHub template. New projects therefore inherited ContextRail's own README, license, changelog, fixtures, and development history. Reusable files also existed at repository root, making it unclear which copy should be maintained.
 
 ### Decisions
 
-Record what is already settled. Link a standalone `DEC-####` record when the decision deserves an independent identity.
+Use `template/` as the only canonical distribution payload. Publish that payload to a separate clean template repository. Keep validator development fixtures and three-platform CI only in this source repository.
 
 ### Requirements
 
-List the behavior and constraints that must hold.
+- Add root-cause-before-patch, independent review, incidental-finding, and canonical-verification rules to the distributed `AGENTS.md`.
+- Validate required fields in Board, Notes, and History records.
+- Keep a minimal memory-validation workflow in the user template.
+- Test validator parity on Linux, macOS, and Windows in this repository.
 
 ### Risks
 
-List likely failure modes, unknowns, and boundaries.
+- Cross-repository automated publishing requires a repository-scoped credential that cannot be created by the repository contents API.
+- Shell and PowerShell validators may drift unless changed and tested together.
 
-### Next slice
+### Result
 
-Define the smallest useful implementation step and how it will be verified.
+The clean payload, v0.5 operating contract, required-field validation, minimal template CI, source-repository parity CI, documentation, and publication workflow were implemented and passed all three operating-system jobs.
 
-## DEC-0001 — Keep project memory in three lifecycle files
+## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
 - Related: TASK-0000
-- Last updated: 2026-06-28
-
-### Context
-
-One large file can become difficult to maintain, while file-per-feature can create orphan, duplicate, and discovery problems.
+- Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Boundaries and Sources of Truth
 
 ### Decision
 
-Use one folder with Board for unfinished work, Notes for detail and rationale, and History for completed evidence.
+Use `SYSTEM.md`, `BOARD.md`, `NOTES.md`, and `HISTORY.md` as four bounded information roles.
 
-### Consequences
+## DEC-0002 — Maintain one canonical template payload
+- Status: accepted
+- Related: TASK-0001
+- Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Components, Primary Flows, and Invariants
 
-The repository stays simple, but lifecycle discipline and validation remain necessary.
+### Decision
+
+Maintain reusable files only under `template/`. Treat `isikmuhamm/contextrail-template` as a published mirror rather than a separate development source.
+
+## DEC-0003 — Integrate memory validation into canonical project verification
+- Status: accepted
+- Related: TASK-0001
+- Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Invariants
+
+### Decision
+
+On first substantive use, discover the repository's existing native verification entrypoint and add ContextRail validation to the same canonical command. Use the standalone template workflow only as an initial safety net or when no established CI exists.
