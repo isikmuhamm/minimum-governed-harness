@@ -36,6 +36,32 @@ A gated release workflow derives every output from `template/`, synchronizes the
 
 Pull-request CI passed Linux, macOS, Windows, and published-template consistency checks. The merge marker started the gated workflow, which created `v0.5.0` only after source/template, fresh-clone, and extracted-archive equality gates. The official release path now publishes the clean ZIP, archive checksum, and per-file checksum manifest from the same canonical payload.
 
+## TASK-0003 — Add handoff adoption and task-linked code trace
+- Status: active
+- Related: DEC-0005, DEC-0006
+- Last updated: 2026-07-01
+
+### Context
+
+ContextRail governs project-local work after it has entered the repository, but it does not yet define how an external specification, assessment, or handoff package becomes local Board and Notes records. Source code and principal tests also have no minimal pointer back to the task context that explains why a durable behavior boundary exists.
+
+### Decisions
+
+- Add one generic `handoffs/HANDOFF.md` intake contract. External packages remain staging inputs and are converted into local records before implementation.
+- Add a language-native code comment containing `ContextRail: TASK-####` and a short current invariant at the smallest useful implementation boundary.
+- Reuse the same task marker in the principal regression test when a task establishes or changes testable runtime behavior.
+- Do not create a separate implementation mapping file, semantic retrieval layer, region marker system, or full code-change history.
+
+### Requirements
+
+- Handoff adoption must search and deduplicate before creating local identities.
+- Durable requirements, decisions, risks, rationale, acceptance criteria, and source provenance must be captured in Notes.
+- Independently verifiable implementation work must be represented as short local Board tasks.
+- Raw handoff packages must not become canonical project memory.
+- Code trace markers must resolve to a task with a lifecycle record and Notes detail.
+- Exact duplicate task, decision, requirement, or risk titles under different identities must be rejected after normalization.
+- Linux, macOS, and Windows validators must implement the same checks.
+
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
 - Related: TASK-0000
@@ -75,3 +101,21 @@ On first substantive use, discover the repository's existing native verification
 ### Decision
 
 Keep the GitHub Template Repository as the new-project channel and publish versioned clean ZIP archives from the same `template/` payload. Block release creation unless source, published mirror, and extracted archive are identical.
+
+## DEC-0005 — Adopt external handoffs through local records
+- Status: proposed
+- Related: TASK-0003
+- Last updated: 2026-07-01
+
+### Decision
+
+Treat external handoff packages as non-canonical staging inputs. Before implementation, deduplicate them against current project memory and convert durable meaning into local Notes records and independently verifiable local Board tasks.
+
+## DEC-0006 — Trace durable code boundaries to one governing task
+- Status: proposed
+- Related: TASK-0003
+- Last updated: 2026-07-01
+
+### Decision
+
+Use a minimal language-native comment containing a local `TASK-####` pointer and short current invariant. The pointer identifies the task that best explains the present behavior, not every task that historically touched the code.
