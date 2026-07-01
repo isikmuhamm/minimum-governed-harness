@@ -57,3 +57,22 @@ jobs:
             exit 1
           }
           exit 0
+
+  published-template-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone published template
+        run: git clone --depth 1 https://github.com/isikmuhamm/contextrail-template.git published-template
+      - name: Require equality for the same declared version
+        run: |
+          set -eu
+          source_version="$(tr -d '[:space:]' < template/.contextrail-version)"
+          published_version="$(tr -d '[:space:]' < published-template/.contextrail-version)"
+
+          if [ "$source_version" = "$published_version" ]; then
+            echo "Both repositories declare ContextRail ${source_version}; their payloads must be identical."
+            diff -qr --exclude=.git template published-template
+          else
+            echo "Unreleased source version ${source_version}; published template remains ${published_version}."
+          fi

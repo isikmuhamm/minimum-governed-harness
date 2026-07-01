@@ -11,8 +11,8 @@ Read and follow [`template/AGENTS.md`](template/AGENTS.md) as the reusable opera
 - `template/` — canonical source for every file distributed to user repositories.
 - `README.md` and `docs/` — public explanation, adoption, and governance documentation.
 - `tests/fixtures/` — deliberately valid or invalid memory examples used to test validators.
-- `.github/workflows/validate-memory.yml` — tests the canonical template validators on Linux, macOS, and Windows.
-- `.github/workflows/publish-template.yml` — publishes `template/` to `isikmuhamm/contextrail-template` when release credentials are configured.
+- `.github/workflows/validate-memory.yml` — tests validator parity and detects same-version drift between `template/` and the published template repository.
+- `.github/workflows/release.yml` — synchronizes the published template, builds and round-trip verifies the release archive, and creates the official GitHub Release.
 - `project-memory/` — ContextRail's own current system model and work lifecycle.
 
 ## Distribution rules
@@ -22,6 +22,8 @@ Read and follow [`template/AGENTS.md`](template/AGENTS.md) as the reusable opera
 - The template repository is a published mirror, not a development source.
 - Files outside `template/` must not be copied into user projects unless the adoption documentation explicitly says so.
 - A template release must not include this repository's README, license, changelog, contribution guide, test fixtures, or development history.
+- A release is valid only when `template/`, `contextrail-template`, and the extracted release ZIP are identical.
+- The release tag, changelog section, and `template/.contextrail-version` must name the same version.
 
 ## Validator parity
 

@@ -12,6 +12,7 @@ All notable changes to ContextRail are documented here.
 - Added first-adoption discovery and canonical verification integration.
 - Added required-field validation for Board, Notes, and History records.
 - Added a minimal template CI workflow while keeping validator development fixtures and three-OS testing in the source repository.
+- Added synchronized GitHub Releases with a clean ZIP, archive checksum, file manifest, published-template round-trip verification, and same-version drift detection.
 - Hardened Windows validation for Windows PowerShell 5.1 compatibility.
 
 ## 0.4.0
