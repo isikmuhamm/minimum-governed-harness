@@ -1,0 +1,31 @@
+name: Cleanup merged branches once
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: contains(github.event.head_commit.message, '[cleanup-once]')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete known merged branches
+        run: |
+          set -u
+          for branch in \
+            noop \
+            feature/synchronized-releases \
+            chore/close-release-lifecycle \
+            release/contextrail-v0.5.0 \
+            release/context-rail-v0.4.0 \
+            fix/windows-validator-ci
+          do
+            echo "Deleting $branch if it exists"
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}" || true
+          done
