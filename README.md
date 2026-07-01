@@ -1,161 +1,151 @@
 # ContextRail — Minimum Governed Harness
 
+[![Validate project memory](https://github.com/isikmuhamm/minimum-governed-harness/actions/workflows/validate-memory.yml/badge.svg)](https://github.com/isikmuhamm/minimum-governed-harness/actions/workflows/validate-memory.yml)
 
 **ContextRail** is the project name; **Minimum Governed Harness** describes the pattern.
-A lightweight, repo-local project memory and governance template for coding agents.
 
-> Give the agent a reliable map of current work, task details, and completed evidence without turning the repository into a planning platform.
+A small, repo-local system map and project-memory harness for coding agents.
 
-## Core model
+> Give the agent the right current truth, active work, task detail, and completed evidence—without turning the repository into a planning platform.
+
+ContextRail sits between two common extremes: one instruction file that cannot reliably preserve project state, and a full planning or orchestration framework that creates many artifacts and its own workflow. It keeps the coding agent's native planner and adds only the smallest durable context and governance layer around it.
+
+## Core idea
 
 ```text
-AGENTS.md
+SYSTEM  -> What is true about the implemented system now?
+BOARD   -> What unfinished work exists now?
+NOTES   -> What does the work mean, and why are decisions being made?
+HISTORY -> What was completed or cancelled, and what proves it?
+```
+
+These roles could live in one document. Four bounded files keep retrieval small and stop current architecture, open work, rationale, and historical evidence from competing in the same surface.
+
+## Repository structure
+
+```text
+AGENTS.md                         Canonical operating guide
+CLAUDE.md                         Thin adapter to AGENTS.md
+GEMINI.md                         Thin adapter to AGENTS.md
+.github/copilot-instructions.md   Thin adapter to AGENTS.md
+.cursor/rules/00-agents.mdc       Thin adapter to AGENTS.md
+
 project-memory/
-  BOARD.md
-  NOTES.md
-  HISTORY.md
+  SYSTEM.md                       Current system map
+  BOARD.md                        Unfinished work queue
+  NOTES.md                        Detail, decisions, requirements, risks
+  HISTORY.md                      Completed/cancelled work and evidence
+
 scripts/
-  validate_memory.py
+  validate-linux.sh               Dependency-free Linux validator
+  validate-macos.sh               Dependency-free macOS validator
+  validate-windows.ps1            Dependency-free Windows validator
 ```
 
-| File | Canonical question |
-| --- | --- |
-| `AGENTS.md` | How should the agent work in this repository? |
-| `project-memory/BOARD.md` | What unfinished work exists now? |
-| `project-memory/NOTES.md` | What are the details, decisions, requirements, and risks? |
-| `project-memory/HISTORY.md` | What was completed or cancelled, and what proves it? |
-| `README.md` | What does the project publicly claim and provide? |
-
-The same `TASK-####` identity follows a task through its lifecycle. While work is unfinished, it appears in Board and may have a matching detail record in Notes. Once completed, it leaves Board and receives a completion record in History. Notes may remain as durable rationale.
+## How an agent uses it
 
 ```text
-BOARD + NOTES -> implementation + verification -> HISTORY + retained NOTES
+Read AGENTS
+  -> read bounded SYSTEM map
+  -> select one TASK from BOARD
+  -> retrieve exact TASK and related IDs from NOTES
+  -> inspect only relevant code/tests/config
+  -> use the agent's native planner
+  -> implement and run the project's own tests
+  -> remove completed TASK from BOARD
+  -> record evidence in HISTORY
+  -> update SYSTEM if current truth changed
+  -> run the OS-native memory validator
 ```
 
-## Why governance is included
-
-Neither one large file nor one file per feature solves governance by itself. Both can produce duplicate tasks, orphan notes, stale active work, broken references, contradictory status, or the same feature opened under different names.
-
-Minimum Governed Harness keeps storage simple and adds a dependency-free validator.
+`HISTORY.md` is not loaded by default. It is searched by exact ID only when prior implementation evidence is needed.
 
 ## Quick start
 
-1. Create a repository from this template or copy these files into an existing repository.
-2. Replace the sample entries under `project-memory/`.
-3. Adapt `AGENTS.md` to the project's build, test, and safety rules.
-4. Run:
+1. Click **Use this template** on GitHub.
+2. Replace the sample records in `project-memory/`.
+3. Add your real build and test commands to `AGENTS.md`.
+4. Run the validator for your operating system.
 
-```bash
-python scripts/validate_memory.py
-python scripts/validate_memory.py --strict
-python -m unittest discover -s tests -v
+### Linux
+
+```sh
+sh scripts/validate-linux.sh --strict
 ```
 
-Strict mode treats warnings as failures.
+### macOS
 
-## Supported records
-
-- `TASK-####` — work with a lifecycle.
-- `DEC-####` — durable decision.
-- `REQ-####` — durable requirement.
-- `RISK-####` — durable risk.
-
-Priority, milestone, owner, and status are metadata, not identity.
-
-## Lifecycle
-
-```text
-proposed -> active -> blocked -> active -> completed
-                \-> cancelled
+```sh
+sh scripts/validate-macos.sh --strict
 ```
 
-- `proposed`, `active`, and `blocked` tasks live in Board.
-- Task details live in Notes under the same task ID.
-- `completed` and `cancelled` tasks live in History.
-- A task must not exist in Board and History at the same time.
+### Windows
 
-## Record examples
-
-### Board
-
-```markdown
-## TASK-0001 — Add user authentication
-- Status: active
-- Priority: P1
-- Owner: unassigned
-- Related: DEC-0001
-- Summary: Add session-based authentication.
-- Acceptance: Login, logout, and protected routes are tested.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Strict
 ```
 
-### Notes
+The harness requires no Python, Node.js, Go, Rust, Java, .NET, or project-specific runtime. The validators use tools supplied with the operating system.
 
-```markdown
-## TASK-0001 — Add user authentication
-- Status: active
-- Related: DEC-0001
-- Last updated: 2026-06-28
+The harness validator checks project-memory governance only. It does **not** replace native project tests such as `go test ./...`, `npm test`, `cargo test`, `dotnet test`, `ctest`, or a project's own runner.
 
-### Context
-Why the task exists.
+## Stable record identities
 
-### Decisions
-What is already settled.
+- `TASK-####` — work with an independently verifiable outcome.
+- `DEC-####` — a durable design or product decision.
+- `REQ-####` — a requirement or invariant that must hold.
+- `RISK-####` — a tracked uncertainty or failure mode.
 
-### Risks
-Known constraints and failure modes.
+Priority, milestone, status, and owner are fields, not part of the stable identity.
 
-### Next slice
-The smallest useful implementation step.
-```
+## System model versus design discussion
 
-### History
+`SYSTEM.md` contains concise, implemented truth: purpose, components, flows, boundaries, invariants, interfaces, and known limits. Unresolved design work stays in `NOTES.md`. When a decision is accepted and implemented, its resulting current truth is reflected in `SYSTEM.md`.
 
-```markdown
-## TASK-0001 — Add user authentication
-- Status: completed
-- Completed: 2026-06-28
-- Related: DEC-0001
-- Evidence: `pytest tests/auth`
-- Outcome: Login, logout, and protected routes implemented.
-```
+This prevents Board from becoming a mixture of tasks, architecture, discussion, and old evidence.
 
 ## Governance rules
 
-1. Search before create.
-2. Reuse the same task identity when the work already exists.
-3. Keep Board short and Notes detailed.
-4. Remove completed work from Board.
-5. Reference durable records instead of copying them.
-6. Update Board, Notes, History, public docs, and validation together.
-7. Add another memory file only when ownership, lifecycle, security, or independent reuse clearly requires it.
+1. Search before creating a record.
+2. Reuse the same identity for the same work.
+3. Keep Board short and actionable.
+4. Put task detail and reasoning in Notes.
+5. Put implemented system truth in System.
+6. Put completion and verification evidence in History.
+7. Never keep one task in Board and History simultaneously.
+8. Reference records instead of copying their full text.
+9. Update implementation, memory, and public documentation as one lifecycle change.
+10. Add another memory file only when ownership, lifecycle, security, or independent reuse creates a real boundary.
 
-See [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md).
+## What validation catches
 
-## Validator checks
+The OS-native validators detect missing files or System sections, lifecycle records placed in System, duplicate IDs, invalid statuses, missing dates/evidence, Board/History overlap, orphan task details, unresolved references, accepted decisions without reflection, and an oversized System map.
 
-The validator detects:
+Warnings become failures in strict mode. A deliberately invalid fixture verifies that CI rejects broken memory rather than only passing a valid sample.
 
-- duplicate IDs inside the same file;
-- malformed record headings;
-- unresolved `Related`, `Supersedes`, and `Replacement` references;
-- tasks present in both Board and History;
-- Notes task details with no Board or History lifecycle record;
-- Board tasks with no matching Notes detail;
-- invalid statuses for each lifecycle file;
-- completed History records without a valid completion date;
-- unreferenced decision, requirement, and risk records;
-- suspiciously similar active task titles.
+## Agent compatibility
 
-Warnings are review signals, not proof of an error.
+`AGENTS.md` is the single canonical instruction source. Claude Code, Gemini CLI, GitHub Copilot, and Cursor files are thin redirects, avoiding instruction drift.
 
-## Scope
+## Why not file-per-feature?
 
-This is not a project-management replacement, multi-agent runtime, semantic search system, planning compiler, or mandatory file-per-feature scheme. It is a minimal governed memory layer that works with the coding agent's native planner.
+File-per-feature can improve isolation, but it can also create duplicate features, orphan files, stale links, naming drift, and a large navigation surface. ContextRail uses stable IDs and targeted section retrieval. A logical record can remain modular without requiring a separate physical file.
+
+## What this is not
+
+ContextRail is not a project-management replacement, file-per-feature requirement, specification generator, planning compiler, multi-agent runtime, semantic database, or replacement for source code and native tests.
+
+It is a minimal governed context layer that lets the coding agent keep using its own planner.
+
+## Adoption and documentation
+
+- [Governance contract](docs/GOVERNANCE.md)
+- [Adoption guide](docs/ADOPTION.md)
+- [Release history](CHANGELOG.md)
 
 ## Status
 
-This is an early reference implementation for field testing. Performance, token savings, and task-success improvements should be measured rather than assumed.
+This is an early reference implementation extracted from real multi-session coding-agent workflows. It will be refined through use and measured experiments rather than by adding features pre-emptively.
 
 ## License
 
