@@ -38,15 +38,25 @@ function Require-Field {
     }
 }
 
+function Normalize-Title {
+    param([string]$Title)
+    if ([string]::IsNullOrWhiteSpace($Title)) { return "" }
+    $Value = $Title.ToLowerInvariant()
+    $Value = [regex]::Replace($Value, '[^\p{L}\p{Nd}]+', ' ')
+    return [regex]::Replace($Value.Trim(), '\s+', ' ')
+}
+
 function Parse-Records {
     param([string]$Path)
     $Records = @()
     $Current = $null
     foreach ($Line in Get-Content -LiteralPath $Path -Encoding UTF8) {
-        if ($Line -match '^## ((TASK|DEC|REQ|RISK)-[0-9]{4})[ ]') {
+        if ($Line -match '^## ((TASK|DEC|REQ|RISK)-[0-9]{4})(?:[ ]+[—-])?[ ]*(.*)$') {
             $Current = [PSCustomObject]@{
                 Id = $Matches[1]
                 Type = $Matches[2]
+                Title = $Matches[3].Trim()
+                NormalizedTitle = (Normalize-Title $Matches[3])
                 Fields = @{}
                 References = @()
             }
@@ -116,6 +126,23 @@ foreach ($Set in @(
     }
 }
 
+$AllRecords = @($Board + $Notes + $History)
+foreach ($Group in @($AllRecords | Group-Object Id)) {
+    $Titles = @($Group.Group | ForEach-Object { $_.NormalizedTitle } | Where-Object { $_ } | Sort-Object -Unique)
+    if ($Titles.Count -gt 1) {
+        $TitleList = $Titles -join "' and '"
+        Report-Error "$($Group.Name) has inconsistent normalized titles: '$TitleList'"
+    }
+}
+foreach ($Group in @($AllRecords | Where-Object { $_.NormalizedTitle } | Group-Object -Property Type, NormalizedTitle)) {
+    $Ids = @($Group.Group | ForEach-Object { $_.Id } | Sort-Object -Unique)
+    if ($Ids.Count -gt 1) {
+        $Type = $Group.Group[0].Type
+        $Title = $Group.Group[0].NormalizedTitle
+        Report-Error "Duplicate normalized $Type title '$Title' under $($Ids -join ' and ')"
+    }
+}
+
 foreach ($Record in $Board) {
     if ($Record.Type -ne 'TASK') { Report-Error "Board may contain only TASK records: $($Record.Id)" }
     foreach ($Name in @('Status','Priority','Owner','Related','Summary','Acceptance')) { Require-Field $Record $Name }
@@ -153,6 +180,7 @@ foreach ($Record in $History) {
 $BoardIds = @($Board | ForEach-Object { $_.Id })
 $HistoryIds = @($History | ForEach-Object { $_.Id })
 $NoteTaskIds = @($Notes | Where-Object { $_.Type -eq 'TASK' } | ForEach-Object { $_.Id })
+$LifecycleIds = @($BoardIds + $HistoryIds | Sort-Object -Unique)
 $KnownIds = @($BoardIds + ($Notes | ForEach-Object { $_.Id }) + $HistoryIds | Sort-Object -Unique)
 
 foreach ($Id in $BoardIds) {
@@ -173,9 +201,61 @@ foreach ($Record in @($Board + $Notes + $History)) {
     }
 }
 
+$RootPrefix = $Root.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+$ExcludedDirectoryPattern = '(^|/)(\.git|node_modules|vendor|dist|build|coverage|project-memory|handoffs|docs|fixtures)(/|$)'
+$ExcludedExtensions = @('.md','.markdown','.rst','.txt','.lock','.map','.png','.jpg','.jpeg','.gif','.webp','.ico','.pdf','.zip','.gz','.tar','.7z','.jar','.dll','.exe','.so','.dylib','.class','.pyc','.pyo','.wasm')
+$ExcludedValidatorNames = @('validate-linux.sh','validate-macos.sh','validate-windows.ps1')
+
+foreach ($File in Get-ChildItem -LiteralPath $Root -Recurse -File -Force) {
+    $Relative = $File.FullName.Substring($RootPrefix.Length).Replace('\','/')
+    if ($Relative -match $ExcludedDirectoryPattern) { continue }
+
+    $LowerName = $File.Name.ToLowerInvariant()
+    if ($ExcludedValidatorNames -contains $LowerName) { continue }
+    if ($ExcludedExtensions -contains $File.Extension.ToLowerInvariant()) { continue }
+    if ($LowerName -match '\.min\.(js|css)$') { continue }
+
+    try {
+        $Lines = @(Get-Content -LiteralPath $File.FullName -Encoding UTF8)
+    } catch {
+        continue
+    }
+
+    for ($Index = 0; $Index -lt $Lines.Count; $Index++) {
+        $Line = [string]$Lines[$Index]
+        if ($Line -notmatch 'ContextRail:\s*TASK-') { continue }
+
+        $LineNumber = $Index + 1
+        if ($Line -notmatch 'ContextRail:\s*(TASK-[0-9]{4})(?![0-9])') {
+            Report-Error "$Relative`:$LineNumber has malformed ContextRail TASK marker"
+            continue
+        }
+
+        $Task = $Matches[1]
+        if ($LifecycleIds -notcontains $Task) {
+            Report-Error "$Relative`:$LineNumber references $Task without Board or History lifecycle record"
+        }
+        if ($NoteTaskIds -notcontains $Task) {
+            Report-Error "$Relative`:$LineNumber references $Task without Notes detail"
+        }
+
+        $WindowEnd = [Math]::Min($Index + 2, $Lines.Count - 1)
+        $HasInvariant = $false
+        for ($WindowIndex = $Index; $WindowIndex -le $WindowEnd; $WindowIndex++) {
+            if ([string]$Lines[$WindowIndex] -match 'Invariant:\s*\S') {
+                $HasInvariant = $true
+                break
+            }
+        }
+        if (-not $HasInvariant) {
+            Report-Warning "$Relative`:$LineNumber has no non-empty Invariant within the next two lines"
+        }
+    }
+}
+
 Write-Host ""
 Write-Host "Summary: $($script:ErrorCount) error(s), $($script:WarningCount) warning(s)"
 if ($script:ErrorCount -gt 0) { exit 1 }
 if ($Strict -and $script:WarningCount -gt 0) { exit 2 }
-Write-Host "PASS  Project memory contract is valid" -ForegroundColor Green
+Write-Host "PASS  Project memory and code trace contract is valid" -ForegroundColor Green
 exit 0
