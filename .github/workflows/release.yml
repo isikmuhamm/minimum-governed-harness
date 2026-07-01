@@ -1,0 +1,207 @@
+name: Publish synchronized ContextRail release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v0.6.0
+        required: true
+        type: string
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contextrail-release-${{ inputs.tag || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release:')
+    runs-on: ubuntu-latest
+    env:
+      TEMPLATE_REPOSITORY: isikmuhamm/contextrail-template
+      TEMPLATE_TOKEN: ${{ secrets.CONTEXTRAIL_TEMPLATE_TOKEN }}
+
+    steps:
+      - name: Check out ContextRail source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: source
+
+      - name: Resolve requested release
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -eu
+
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$REQUESTED_TAG"
+          else
+            tag="$(printf '%s\n' "$COMMIT_MESSAGE" | sed -n 's/.*\[release:\(v[0-9][0-9.]*\)\].*/\1/p')"
+          fi
+
+          if ! printf '%s\n' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Release tag must look exactly like vX.Y.Z: $tag" >&2
+            exit 1
+          fi
+
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=${tag#v}" >> "$GITHUB_ENV"
+
+      - name: Validate release identity
+        working-directory: source
+        run: |
+          set -eu
+          declared="$(tr -d '[:space:]' < template/.contextrail-version)"
+
+          if [ "$RELEASE_VERSION" != "$declared" ]; then
+            echo "Tag $RELEASE_TAG does not match template/.contextrail-version ($declared)." >&2
+            exit 1
+          fi
+
+          if ! grep -Fqx "## $RELEASE_VERSION" CHANGELOG.md; then
+            echo "CHANGELOG.md has no section for $RELEASE_VERSION." >&2
+            exit 1
+          fi
+
+          git fetch origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "A release must target a commit contained in main." >&2
+            exit 1
+          fi
+
+          if git rev-parse "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            existing_target="$(git rev-list -n 1 "$RELEASE_TAG")"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "$RELEASE_TAG already points to $existing_target instead of $GITHUB_SHA." >&2
+              exit 1
+            fi
+          fi
+
+      - name: Validate canonical template payload
+        run: sh source/template/scripts/validate-linux.sh --root source/template --strict
+
+      - name: Clone published template
+        run: git clone --depth 1 "https://github.com/${TEMPLATE_REPOSITORY}.git" published
+
+      - name: Synchronize published template when required
+        run: |
+          set -eu
+
+          if diff -qr --exclude=.git source/template published > sync.diff; then
+            echo "Published template already matches the canonical payload."
+            exit 0
+          fi
+
+          echo "Published template differs from source/template:"
+          cat sync.diff
+
+          if [ -z "${TEMPLATE_TOKEN}" ]; then
+            echo "CONTEXTRAIL_TEMPLATE_TOKEN is required to publish changed template content." >&2
+            exit 1
+          fi
+
+          rsync -a --delete --exclude=.git source/template/ published/
+          git -C published config user.name "ContextRail Publisher"
+          git -C published config user.email "actions@users.noreply.github.com"
+          git -C published add -A
+
+          if git -C published diff --cached --quiet; then
+            echo "No publishable changes remained after synchronization."
+          else
+            git -C published commit -m "chore: publish ContextRail ${RELEASE_TAG}"
+            git -C published remote set-url origin "https://x-access-token:${TEMPLATE_TOKEN}@github.com/${TEMPLATE_REPOSITORY}.git"
+            git -C published push origin HEAD:main
+          fi
+
+      - name: Verify published repository round trip
+        run: |
+          set -eu
+          rm -rf verified-template
+          git clone --depth 1 "https://github.com/${TEMPLATE_REPOSITORY}.git" verified-template
+          diff -qr --exclude=.git source/template verified-template
+
+          source_version="$(tr -d '[:space:]' < source/template/.contextrail-version)"
+          published_version="$(tr -d '[:space:]' < verified-template/.contextrail-version)"
+          test "$source_version" = "$published_version"
+
+      - name: Build and verify release archive
+        run: |
+          set -eu
+          archive="contextrail-template-${RELEASE_TAG}.zip"
+          checksum="${archive}.sha256"
+          manifest="contextrail-template-${RELEASE_TAG}.manifest.sha256"
+
+          (
+            cd source/template
+            zip -qr "../../${archive}" .
+            find . -type f -print0 | sort -z | xargs -0 sha256sum
+          ) > "$manifest"
+
+          sha256sum "$archive" > "$checksum"
+
+          rm -rf extracted-template
+          mkdir extracted-template
+          unzip -q "$archive" -d extracted-template
+          diff -qr source/template extracted-template
+
+      - name: Build release notes from changelog
+        working-directory: source
+        run: |
+          set -eu
+          awk -v heading="## ${RELEASE_VERSION}" '
+            $0 == heading { found=1; next }
+            found && /^## / { exit }
+            found { print }
+            END { if (!found) exit 1 }
+          ' CHANGELOG.md > ../release-notes.md
+
+          if [ ! -s ../release-notes.md ]; then
+            echo "Release notes for ${RELEASE_VERSION} are empty." >&2
+            exit 1
+          fi
+
+      - name: Create or verify GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          archive="contextrail-template-${RELEASE_TAG}.zip"
+          checksum="${archive}.sha256"
+          manifest="contextrail-template-${RELEASE_TAG}.manifest.sha256"
+
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$archive" "$checksum" "$manifest" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+            gh release edit "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "ContextRail ${RELEASE_TAG}" \
+              --notes-file release-notes.md
+          else
+            gh release create "$RELEASE_TAG" \
+              "$archive" \
+              "$checksum" \
+              "$manifest" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "ContextRail ${RELEASE_TAG}" \
+              --notes-file release-notes.md
+          fi
+
+      - name: Verify published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          archive="contextrail-template-${RELEASE_TAG}.zip"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' > release-assets.txt
+          grep -Fqx "$archive" release-assets.txt
+          grep -Fqx "${archive}.sha256" release-assets.txt
+          grep -Fqx "contextrail-template-${RELEASE_TAG}.manifest.sha256" release-assets.txt
