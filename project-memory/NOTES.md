@@ -3,7 +3,7 @@
 Task details, rationale, decisions, requirements, and risks.
 
 ## TASK-0001 — Publish ContextRail v0.5 clean template distribution
-- Status: active
+- Status: completed
 - Related: DEC-0002, DEC-0003
 - Last updated: 2026-07-01
 
@@ -27,9 +27,9 @@ Use `template/` as the only canonical distribution payload. Publish that payload
 - Cross-repository automated publishing requires a repository-scoped credential that cannot be created by the repository contents API.
 - Shell and PowerShell validators may drift unless changed and tested together.
 
-### Next slice
+### Result
 
-Run the v0.5 pull-request workflow, correct any platform differences, publish the verified payload to `contextrail-template`, and then close the lifecycle record with CI evidence.
+The clean payload, v0.5 operating contract, required-field validation, minimal template CI, source-repository parity CI, documentation, and publication workflow were implemented and passed all three operating-system jobs.
 
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
