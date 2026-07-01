@@ -17,3 +17,10 @@ Allowed statuses: `completed`, `cancelled`.
 - Related: DEC-0002, DEC-0003
 - Evidence: GitHub Actions run 28520073108 passed clean-template validation, source-repository memory validation, and invalid-fixture rejection on Linux, macOS, and Windows.
 - Outcome: Established `template/` as the canonical distribution source, added the v0.5 agent contract and required-field validation, documented the two-repository model, and prepared automated publication to the clean template repository.
+
+## TASK-0002 — Add synchronized template and release distribution
+- Status: completed
+- Completed: 2026-07-01
+- Related: DEC-0004
+- Evidence: Pull-request Actions run 28522311524 passed Linux, macOS, Windows, and published-template consistency jobs; the gated release workflow created tag `v0.5.0`, whose tagged tree declares version `0.5.0` and contains the synchronized release workflow.
+- Outcome: Added official clean GitHub Release archives in parallel with the Template Repository, with tag/version/changelog agreement, fresh-clone and archive round-trip equality gates, ZIP checksum, per-file manifest, and same-version drift detection.
