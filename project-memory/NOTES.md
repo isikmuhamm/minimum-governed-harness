@@ -12,7 +12,7 @@ Task details, rationale, decisions, requirements, and risks.
 The clean payload, v0.5 operating contract, required-field validation, minimal template CI, source-repository parity CI, documentation, and publication workflow were implemented and passed all three operating-system jobs.
 
 ## TASK-0002 — Add synchronized template and release distribution
-- Status: active
+- Status: completed
 - Related: DEC-0004
 - Last updated: 2026-07-01
 
@@ -22,24 +22,19 @@ The Template Repository is the correct new-project installation channel, while G
 
 ### Decisions
 
-A release tag triggers one gated workflow. The workflow derives every output from `template/`, synchronizes the published template when needed, verifies a fresh clone, builds a clean ZIP, extracts and compares it, then creates the GitHub Release with checksum and file-manifest assets.
+A gated release workflow derives every output from `template/`, synchronizes the published template when needed, verifies a fresh clone, builds a clean ZIP, extracts and compares it, then creates the GitHub Release with checksum and file-manifest assets.
 
 ### Requirements
 
-- The tag must point to a commit contained in `main`.
+- The release target must be contained in `main`.
 - `vX.Y.Z`, `template/.contextrail-version`, and the changelog heading must agree.
 - Same-version source and published payloads must compare equal in normal CI.
 - The release must not be created before fresh-clone and archive round-trip verification succeeds.
 - The template repository may be updated only with `CONTEXTRAIL_TEMPLATE_TOKEN`.
 
-### Risks
+### Result
 
-- The release workflow itself is exercised fully only by creating a tag.
-- Cross-repository synchronization fails safely when content differs and the token is unavailable.
-
-### Next slice
-
-Run pull-request CI, merge the workflow, create the `v0.5.0` tag on main, and verify the release assets.
+Pull-request CI passed Linux, macOS, Windows, and published-template consistency checks. The merge marker started the gated workflow, which created `v0.5.0` only after source/template, fresh-clone, and extracted-archive equality gates. The official release path now publishes the clean ZIP, archive checksum, and per-file checksum manifest from the same canonical payload.
 
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
