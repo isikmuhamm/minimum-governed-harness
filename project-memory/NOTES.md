@@ -66,6 +66,26 @@ ContextRail governed project-local work after it entered the repository, but it 
 
 The clean template now includes generic handoff staging and adoption guidance, task-linked code trace rules, positive implementation/test mapping fixtures, and cross-platform validators for title identity, orphan records, code-pointer integrity, and nearby invariant text. Pull-request Actions run `28544540035` passed all validation and exact failure-assertion steps on Linux, macOS, and Windows, along with the published-template version guard.
 
+## TASK-0004 — Harden published version synchronization
+- Status: completed
+- Related: DEC-0004
+- Last updated: 2026-07-01
+
+### Context
+
+The first `v1.0.0` release attempt correctly synchronized the visible template payload but the mirror commit retained `.contextrail-version` as `0.5.0`. Fresh-clone equality verification blocked tag and release creation, proving the safety gate worked but exposing a staging gap for the hidden version file.
+
+### Requirements
+
+- Copy and force-stage `.contextrail-version` after payload synchronization.
+- Verify the published worktree and staged blob both equal the declared release version before commit and push.
+- Preserve the existing fresh-clone and archive round-trip gates.
+- Re-run the same `v1.0.0` release only after pull-request validation succeeds.
+
+### Result
+
+The release workflow now explicitly installs and stages the version file, verifies both worktree and staged values, and confirms the fresh clone declares the requested release version. Pull-request Actions run `28545034563` passed Linux, macOS, Windows, and the published-template version guard.
+
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
 - Related: TASK-0000
@@ -98,7 +118,7 @@ On first substantive use, discover the repository's existing native verification
 
 ## DEC-0004 — Derive template and releases from one verified payload
 - Status: accepted
-- Related: TASK-0002
+- Related: TASK-0002, TASK-0004
 - Last updated: 2026-07-01
 - Reflected in: project-memory/SYSTEM.md — Primary Flows and Invariants
 

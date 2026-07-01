@@ -31,3 +31,10 @@ Allowed statuses: `completed`, `cancelled`.
 - Related: DEC-0005, DEC-0006
 - Evidence: Pull-request Actions run 28544540035 passed clean-template validation, source-repository validation, the valid implementation/test trace fixture, exact invalid-fixture assertions, and the published-template version guard on Linux, macOS, and Windows.
 - Outcome: Added generic external handoff adoption, minimal TASK-plus-invariant code trace for implementation and principal tests, normalized-title identity guards, code-pointer validation, cross-platform fixtures, stable 1.0 documentation, and synchronized 1.0.0 release preparation.
+
+## TASK-0004 — Harden published version synchronization
+- Status: completed
+- Completed: 2026-07-01
+- Related: DEC-0004
+- Evidence: The first release attempt stopped before tag creation when fresh-clone equality detected the stale mirror version; pull-request Actions run 28545034563 then passed Linux, macOS, Windows, and the published-template version guard after workflow hardening.
+- Outcome: The release workflow now explicitly copies and stages `.contextrail-version`, checks worktree and staged values against the requested release, and retains fresh-clone plus archive round-trip gates.
