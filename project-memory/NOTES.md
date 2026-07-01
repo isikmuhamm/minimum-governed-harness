@@ -37,13 +37,13 @@ A gated release workflow derives every output from `template/`, synchronizes the
 Pull-request CI passed Linux, macOS, Windows, and published-template consistency checks. The merge marker started the gated workflow, which created `v0.5.0` only after source/template, fresh-clone, and extracted-archive equality gates. The official release path now publishes the clean ZIP, archive checksum, and per-file checksum manifest from the same canonical payload.
 
 ## TASK-0003 — Add handoff adoption and task-linked code trace
-- Status: active
+- Status: completed
 - Related: DEC-0005, DEC-0006
 - Last updated: 2026-07-01
 
 ### Context
 
-ContextRail governs project-local work after it has entered the repository, but it does not yet define how an external specification, assessment, or handoff package becomes local Board and Notes records. Source code and principal tests also have no minimal pointer back to the task context that explains why a durable behavior boundary exists.
+ContextRail governed project-local work after it entered the repository, but it did not define how an external specification, assessment, or handoff package became local Board and Notes records. Source code and principal tests also had no minimal pointer back to the task context that explained why a durable behavior boundary existed.
 
 ### Decisions
 
@@ -54,13 +54,17 @@ ContextRail governs project-local work after it has entered the repository, but 
 
 ### Requirements
 
-- Handoff adoption must search and deduplicate before creating local identities.
-- Durable requirements, decisions, risks, rationale, acceptance criteria, and source provenance must be captured in Notes.
-- Independently verifiable implementation work must be represented as short local Board tasks.
-- Raw handoff packages must not become canonical project memory.
-- Code trace markers must resolve to a task with a lifecycle record and Notes detail.
-- Exact duplicate task, decision, requirement, or risk titles under different identities must be rejected after normalization.
-- Linux, macOS, and Windows validators must implement the same checks.
+- Handoff adoption searches and deduplicates before creating local identities.
+- Durable requirements, decisions, risks, rationale, acceptance criteria, and source provenance are captured in Notes.
+- Independently verifiable implementation work is represented as short local Board tasks.
+- Raw handoff packages do not become canonical project memory.
+- Code trace markers resolve to a task with a lifecycle record and Notes detail.
+- Exact duplicate task, decision, requirement, or risk titles under different identities are rejected after normalization.
+- Linux, macOS, and Windows validators implement the same checks.
+
+### Result
+
+The clean template now includes generic handoff staging and adoption guidance, task-linked code trace rules, positive implementation/test mapping fixtures, and cross-platform validators for title identity, orphan records, code-pointer integrity, and nearby invariant text. Pull-request Actions run `28544540035` passed all validation and exact failure-assertion steps on Linux, macOS, and Windows, along with the published-template version guard.
 
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
@@ -103,18 +107,20 @@ On first substantive use, discover the repository's existing native verification
 Keep the GitHub Template Repository as the new-project channel and publish versioned clean ZIP archives from the same `template/` payload. Block release creation unless source, published mirror, and extracted archive are identical.
 
 ## DEC-0005 — Adopt external handoffs through local records
-- Status: proposed
+- Status: accepted
 - Related: TASK-0003
 - Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Components, Primary Flows, Boundaries and Sources of Truth, and Invariants
 
 ### Decision
 
 Treat external handoff packages as non-canonical staging inputs. Before implementation, deduplicate them against current project memory and convert durable meaning into local Notes records and independently verifiable local Board tasks.
 
 ## DEC-0006 — Trace durable code boundaries to one governing task
-- Status: proposed
+- Status: accepted
 - Related: TASK-0003
 - Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Primary Flows, Invariants, and Known Limits
 
 ### Decision
 
