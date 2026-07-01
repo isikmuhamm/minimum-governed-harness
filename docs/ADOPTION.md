@@ -18,14 +18,30 @@ On first use, the coding agent should:
 6. integrate the matching ContextRail validator into one canonical verification command;
 7. record that command in `AGENTS.md`.
 
-## Existing repository
+## Existing repository or pinned version
 
-Copy the clean template payload rather than this development repository. The required payload is:
+Download the clean archive from the official GitHub Release in `minimum-governed-harness`:
+
+```text
+contextrail-template-vX.Y.Z.zip
+```
+
+The release also provides:
+
+```text
+contextrail-template-vX.Y.Z.zip.sha256
+contextrail-template-vX.Y.Z.manifest.sha256
+```
+
+Verify the archive checksum before extracting it. The per-file manifest can be used to audit or compare installed files later.
+
+Copy or extract the clean payload into the repository root. The required payload is:
 
 ```text
 AGENTS.md
 CLAUDE.md
 GEMINI.md
+.contextrail-version
 .github/copilot-instructions.md
 .github/workflows/contextrail.yml
 .cursor/rules/00-agents.mdc
@@ -43,6 +59,19 @@ Convert existing information by role:
 - completed work and verification -> `HISTORY.md`.
 
 Do not migrate every historical note on day one. Start with current truth, active work, and decisions required to continue safely.
+
+## Template and release equivalence
+
+The GitHub Template Repository and versioned release ZIP are derived from the same canonical `template/` directory.
+
+For each release, automation verifies:
+
+1. the version tag, changelog heading, and `.contextrail-version` agree;
+2. a fresh clone of `contextrail-template` matches the canonical payload;
+3. the generated ZIP extracts to the same payload;
+4. checksums and the file manifest are attached to the release.
+
+When the source and published repositories declare the same version, normal CI fails on any file difference.
 
 ## Verification integration
 
