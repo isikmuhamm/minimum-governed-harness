@@ -1,15 +1,13 @@
 # Board
 
-The short, canonical view of unfinished work.
+The short, canonical view of unfinished ContextRail work.
 
 Allowed statuses: `proposed`, `active`, `blocked`.
 
-Keep detail in Notes. Remove a task when it becomes completed or cancelled.
-
-## TASK-0001 — Replace the sample with the first real task
-- Status: proposed
-- Priority: P1
-- Owner: unassigned
-- Related: none
-- Summary: Define the first useful unit of work.
-- Acceptance: The expected result and verification method are explicit.
+## TASK-0001 — Publish ContextRail v0.5 clean template distribution
+- Status: active
+- Priority: P0
+- Owner: isikmuhamm
+- Related: DEC-0002, DEC-0003
+- Summary: Separate the development repository from a clean generated template, add the v0.5 agent contract, and strengthen required-field validation.
+- Acceptance: The canonical template passes strict validation on Linux, macOS, and Windows; the invalid fixture fails; the clean template repository is populated from the same payload; documentation describes the single-source distribution model.

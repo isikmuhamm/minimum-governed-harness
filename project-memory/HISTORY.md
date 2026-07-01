@@ -1,14 +1,12 @@
 # History
 
-History is the canonical record of completed or cancelled tasks.
+The canonical record of completed or cancelled ContextRail tasks.
 
 Allowed statuses: `completed`, `cancelled`.
-
-Do not keep a completed task in `BOARD.md`. Include concrete evidence whenever possible.
 
 ## TASK-0000 — Bootstrap Minimum Governed Harness
 - Status: completed
 - Completed: 2026-06-28
 - Related: DEC-0001
-- Evidence: Linux validator passed locally; GitHub Actions validates Linux, macOS, Windows, and rejects the invalid fixture.
-- Outcome: Added the system map, Board, Notes, History, canonical agent guide, tool adapters, dependency-free platform validators, negative fixture, and cross-platform CI.
+- Evidence: GitHub Actions validated Linux, macOS, and Windows and rejected the original invalid fixture.
+- Outcome: Added the initial system map, Board, Notes, History, canonical agent guide, adapters, OS-native validators, fixture, and cross-platform CI.

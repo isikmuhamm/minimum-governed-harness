@@ -2,41 +2,61 @@
 
 ## New repository
 
-Use this repository as a GitHub template, then:
+Create a project from the clean template repository:
 
-1. replace the sample System, Board, Notes, and History content,
-2. adapt project-specific rules in `AGENTS.md`,
-3. keep adapter files as short redirects,
-4. add the project's own build and test commands to `AGENTS.md`,
-5. run the validator for the current operating system.
+[`isikmuhamm/contextrail-template`](https://github.com/isikmuhamm/contextrail-template)
+
+The template contains no ContextRail README, license, changelog, fixtures, or development history. Every distributed file is intended to remain in the new project.
+
+On first use, the coding agent should:
+
+1. inspect and preserve the current working tree;
+2. discover the language, build, test, lint, static-analysis, smoke, and CI entrypoints;
+3. populate `SYSTEM.md` only from repository evidence;
+4. record unfinished work in `BOARD.md`;
+5. put task detail and durable rationale in `NOTES.md`;
+6. integrate the matching ContextRail validator into one canonical verification command;
+7. record that command in `AGENTS.md`.
 
 ## Existing repository
 
-Copy:
+Copy the clean template payload rather than this development repository. The required payload is:
 
 ```text
 AGENTS.md
 CLAUDE.md
 GEMINI.md
+.github/copilot-instructions.md
+.github/workflows/contextrail.yml
+.cursor/rules/00-agents.mdc
 project-memory/
 scripts/validate-linux.sh
 scripts/validate-macos.sh
 scripts/validate-windows.ps1
-.github/copilot-instructions.md
-.cursor/rules/00-agents.mdc
-.github/workflows/validate-memory.yml
 ```
 
 Convert existing information by role:
 
-- current implemented architecture and boundaries -> `SYSTEM.md`,
-- unfinished tasks -> `BOARD.md`,
-- task detail and durable rationale -> `NOTES.md`,
+- current implemented architecture and boundaries -> `SYSTEM.md`;
+- unfinished tasks -> `BOARD.md`;
+- task detail and durable rationale -> `NOTES.md`;
 - completed work and verification -> `HISTORY.md`.
 
-Do not migrate every historical note on day one. Start with the current system map, active work, and decisions needed to continue safely.
+Do not migrate every historical note on day one. Start with current truth, active work, and decisions required to continue safely.
 
-## Validation commands
+## Verification integration
+
+The standalone `.github/workflows/contextrail.yml` is an initial safety net. It validates memory on push and pull request.
+
+When a repository already has established CI:
+
+1. add the matching ContextRail validator to the existing canonical verification job;
+2. ensure the local canonical command runs both native project checks and memory validation;
+3. remove the standalone ContextRail workflow if it would duplicate the same validation.
+
+Do not create a second independent test system.
+
+## Direct validation commands
 
 Linux:
 
@@ -56,18 +76,18 @@ Windows:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Strict
 ```
 
-No project-language runtime is required. The scripts use utilities included with the operating system.
+The scripts use operating-system-provided utilities and require no project-language runtime.
 
-## Gradual adoption
+## Minimal conceptual core
 
-The smallest useful adoption is:
+The conceptual core is:
 
 ```text
-SYSTEM.md
-BOARD.md
-NOTES.md
-HISTORY.md
 AGENTS.md
+project-memory/SYSTEM.md
+project-memory/BOARD.md
+project-memory/NOTES.md
+project-memory/HISTORY.md
 ```
 
-Avoid semantic search, graph databases, orchestration, or file-per-feature structures before measured need appears.
+The published template also includes small tool adapters, OS-native validators, and a minimal CI safety net so users do not need to decide what to delete.

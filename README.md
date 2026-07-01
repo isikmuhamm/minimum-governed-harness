@@ -1,16 +1,20 @@
 # ContextRail — Minimum Governed Harness
 
-[![Validate project memory](https://github.com/isikmuhamm/minimum-governed-harness/actions/workflows/validate-memory.yml/badge.svg)](https://github.com/isikmuhamm/minimum-governed-harness/actions/workflows/validate-memory.yml)
+[![Validate ContextRail distribution](https://github.com/isikmuhamm/minimum-governed-harness/actions/workflows/validate-memory.yml/badge.svg)](https://github.com/isikmuhamm/minimum-governed-harness/actions/workflows/validate-memory.yml)
 
-**ContextRail** is the project name; **Minimum Governed Harness** describes the pattern.
+**ContextRail** is a small, repo-local system map and governed project-memory layer for coding agents.
 
-A small, repo-local system map and project-memory harness for coding agents.
+> Give an agent the right current truth, active work, task detail, and completed evidence without replacing its native planner or turning the repository into a planning platform.
 
-> Give the agent the right current truth, active work, task detail, and completed evidence—without turning the repository into a planning platform.
+## Use the clean template
 
-ContextRail sits between two common extremes: one instruction file that cannot reliably preserve project state, and a full planning or orchestration framework that creates many artifacts and its own workflow. It keeps the coding agent's native planner and adds only the smallest durable context and governance layer around it.
+New projects should use the dedicated distribution repository:
 
-## Core idea
+**[`isikmuhamm/contextrail-template`](https://github.com/isikmuhamm/contextrail-template)**
+
+This repository is the ContextRail development and documentation source. It is not the clean user-project template.
+
+## Core model
 
 ```text
 SYSTEM  -> What is true about the implemented system now?
@@ -19,133 +23,163 @@ NOTES   -> What does the work mean, and why are decisions being made?
 HISTORY -> What was completed or cancelled, and what proves it?
 ```
 
-These roles could live in one document. Four bounded files keep retrieval small and stop current architecture, open work, rationale, and historical evidence from competing in the same surface.
+`AGENTS.md` tells coding agents how to retrieve and maintain those four bounded sources.
 
-## Repository structure
+## Why four files?
 
-```text
-AGENTS.md                         Canonical operating guide
-CLAUDE.md                         Thin adapter to AGENTS.md
-GEMINI.md                         Thin adapter to AGENTS.md
-.github/copilot-instructions.md   Thin adapter to AGENTS.md
-.cursor/rules/00-agents.mdc       Thin adapter to AGENTS.md
+A single long instruction file mixes architecture, open work, rationale, and old evidence. A file-per-feature model can create duplicate identities, orphan files, stale links, and a large navigation surface.
 
-project-memory/
-  SYSTEM.md                       Current system map
-  BOARD.md                        Unfinished work queue
-  NOTES.md                        Detail, decisions, requirements, risks
-  HISTORY.md                      Completed/cancelled work and evidence
-
-scripts/
-  validate-linux.sh               Dependency-free Linux validator
-  validate-macos.sh               Dependency-free macOS validator
-  validate-windows.ps1            Dependency-free Windows validator
-```
-
-## How an agent uses it
+ContextRail separates information by lifecycle and ownership while keeping retrieval simple:
 
 ```text
 Read AGENTS
   -> read bounded SYSTEM map
   -> select one TASK from BOARD
   -> retrieve exact TASK and related IDs from NOTES
-  -> inspect only relevant code/tests/config
+  -> inspect only relevant code, tests, logs, and configuration
   -> use the agent's native planner
-  -> implement and run the project's own tests
-  -> remove completed TASK from BOARD
+  -> implement and run canonical verification
   -> record evidence in HISTORY
   -> update SYSTEM if current truth changed
-  -> run the OS-native memory validator
 ```
 
-`HISTORY.md` is not loaded by default. It is searched by exact ID only when prior implementation evidence is needed.
+`HISTORY.md` is searched by exact ID only when prior evidence is needed; it is not loaded by default.
 
-## Quick start
+## Clean template contents
 
-1. Click **Use this template** on GitHub.
-2. Replace the sample records in `project-memory/`.
-3. Add your real build and test commands to `AGENTS.md`.
-4. Run the validator for your operating system.
+The published template contains only files intended to remain in the user's project:
 
-### Linux
+```text
+AGENTS.md
+CLAUDE.md
+GEMINI.md
 
-```sh
-sh scripts/validate-linux.sh --strict
+.github/
+  copilot-instructions.md
+  workflows/contextrail.yml
+
+.cursor/
+  rules/00-agents.mdc
+
+project-memory/
+  SYSTEM.md
+  BOARD.md
+  NOTES.md
+  HISTORY.md
+
+scripts/
+  validate-linux.sh
+  validate-macos.sh
+  validate-windows.ps1
 ```
 
-### macOS
+It deliberately excludes ContextRail's own README, license, changelog, contribution guide, documentation, fixtures, and development history.
 
-```sh
-sh scripts/validate-macos.sh --strict
+## v0.5 operating contract
+
+The current agent guide adds four controls derived from real multi-session project failures:
+
+### Root cause before patch
+
+Agents must identify the violated invariant, domain rule, state transition, or ownership boundary before adding an input-specific guard. Tests should prove a behavior class, not only the reported sentence or example.
+
+### Independent review
+
+After implementation, the agent reviews its own diff as if no other reviewer will catch the mistake. Completion claims must be grounded in code, tests, logs, or observable output.
+
+### Controlled incidental findings
+
+Unrelated bugs and risks are reported with evidence but do not silently expand the current task. Only security, data-loss, verification-blocking, or result-invalidating findings can justify an immediate scope change.
+
+### Canonical verification integration
+
+On first substantive use, the agent discovers the project's existing test, build, lint, static-analysis, smoke, and CI entrypoints. It integrates the matching ContextRail validator into one canonical verification command instead of creating a parallel test system.
+
+## Validation scope
+
+The OS-native validators require no Python, Node.js, Go, Rust, Java, .NET, or project runtime. They validate the project-memory contract, including:
+
+- required files and `SYSTEM.md` sections;
+- lifecycle records incorrectly placed in System;
+- duplicate IDs;
+- invalid statuses;
+- required fields for Board, Notes, and History records;
+- missing completion or cancellation dates;
+- missing completion evidence or outcome;
+- Board/History overlap;
+- orphan task details;
+- broken `Related`, `Supersedes`, and `Replacement` references;
+- accepted decisions not reflected in current system truth;
+- an oversized System map that may no longer be bounded.
+
+The validator does **not** replace native project tests. It becomes one step inside the repository's canonical verification pipeline.
+
+## Required record fields
+
+### Board task
+
+```markdown
+## TASK-0001 — Add user authentication
+- Status: active
+- Priority: P1
+- Owner: unassigned
+- Related: DEC-0001
+- Summary: Add session-based authentication.
+- Acceptance: Login, logout, and protected routes are behavior-tested.
 ```
 
-### Windows
+### Notes record
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate-windows.ps1 -Strict
+```markdown
+## TASK-0001 — Add user authentication
+- Status: active
+- Related: DEC-0001
+- Last updated: 2026-07-01
 ```
 
-The harness requires no Python, Node.js, Go, Rust, Java, .NET, or project-specific runtime. The validators use tools supplied with the operating system.
+Accepted decisions should also include:
 
-The harness validator checks project-memory governance only. It does **not** replace native project tests such as `go test ./...`, `npm test`, `cargo test`, `dotnet test`, `ctest`, or a project's own runner.
+```markdown
+- Reflected in: project-memory/SYSTEM.md — Authentication boundary
+```
 
-## Stable record identities
+### History record
 
-- `TASK-####` — work with an independently verifiable outcome.
-- `DEC-####` — a durable design or product decision.
-- `REQ-####` — a requirement or invariant that must hold.
-- `RISK-####` — a tracked uncertainty or failure mode.
+```markdown
+## TASK-0001 — Add user authentication
+- Status: completed
+- Completed: 2026-07-01
+- Related: DEC-0001
+- Evidence: `pytest tests/auth -q`
+- Outcome: Login, logout, and protected routes implemented.
+```
 
-Priority, milestone, status, and owner are fields, not part of the stable identity.
+Cancelled tasks use `Cancelled: YYYY-MM-DD` instead of `Completed`.
 
-## System model versus design discussion
+## Distribution architecture
 
-`SYSTEM.md` contains concise, implemented truth: purpose, components, flows, boundaries, invariants, interfaces, and known limits. Unresolved design work stays in `NOTES.md`. When a decision is accepted and implemented, its resulting current truth is reflected in `SYSTEM.md`.
+```text
+minimum-governed-harness/template/
+        canonical distribution source
+                    |
+                    v
+isikmuhamm/contextrail-template
+        clean published mirror
+```
 
-This prevents Board from becoming a mixture of tasks, architecture, discussion, and old evidence.
+All reusable changes are developed and tested under `template/`. The template repository is not edited as an independent product source.
 
-## Governance rules
-
-1. Search before creating a record.
-2. Reuse the same identity for the same work.
-3. Keep Board short and actionable.
-4. Put task detail and reasoning in Notes.
-5. Put implemented system truth in System.
-6. Put completion and verification evidence in History.
-7. Never keep one task in Board and History simultaneously.
-8. Reference records instead of copying their full text.
-9. Update implementation, memory, and public documentation as one lifecycle change.
-10. Add another memory file only when ownership, lifecycle, security, or independent reuse creates a real boundary.
-
-## What validation catches
-
-The OS-native validators detect missing files or System sections, lifecycle records placed in System, duplicate IDs, invalid statuses, missing dates/evidence, Board/History overlap, orphan task details, unresolved references, accepted decisions without reflection, and an oversized System map.
-
-Warnings become failures in strict mode. A deliberately invalid fixture verifies that CI rejects broken memory rather than only passing a valid sample.
-
-## Agent compatibility
-
-`AGENTS.md` is the single canonical instruction source. Claude Code, Gemini CLI, GitHub Copilot, and Cursor files are thin redirects, avoiding instruction drift.
-
-## Why not file-per-feature?
-
-File-per-feature can improve isolation, but it can also create duplicate features, orphan files, stale links, naming drift, and a large navigation surface. ContextRail uses stable IDs and targeted section retrieval. A logical record can remain modular without requiring a separate physical file.
-
-## What this is not
-
-ContextRail is not a project-management replacement, file-per-feature requirement, specification generator, planning compiler, multi-agent runtime, semantic database, or replacement for source code and native tests.
-
-It is a minimal governed context layer that lets the coding agent keep using its own planner.
-
-## Adoption and documentation
+## Documentation
 
 - [Governance contract](docs/GOVERNANCE.md)
 - [Adoption guide](docs/ADOPTION.md)
 - [Release history](CHANGELOG.md)
 
-## Status
+## What ContextRail is not
 
-This is an early reference implementation extracted from real multi-session coding-agent workflows. It will be refined through use and measured experiments rather than by adding features pre-emptively.
+ContextRail is not a project-management replacement, specification generator, planning compiler, file-per-feature requirement, multi-agent runtime, semantic database, or substitute for source code and native tests.
+
+It is a minimal governed context layer that lets the coding agent keep using its own planner.
 
 ## License
 
