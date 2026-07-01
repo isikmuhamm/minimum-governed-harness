@@ -2,8 +2,8 @@ param([string]$Root = "", [switch]$Strict)
 $ErrorActionPreference = "Stop"
 if (-not $Root) { $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path } else { $Root = (Resolve-Path $Root).Path }
 $Memory = Join-Path $Root "project-memory"
-$Errors = [System.Collections.Generic.List[string]]::new()
-$Warnings = [System.Collections.Generic.List[string]]::new()
+$Errors = New-Object 'System.Collections.Generic.List[string]'
+$Warnings = New-Object 'System.Collections.Generic.List[string]'
 function Add-Error([string]$Message) { $Errors.Add($Message); Write-Error $Message -ErrorAction Continue }
 function Add-Warn([string]$Message) { $Warnings.Add($Message); Write-Warning $Message }
 $System = Join-Path $Memory "SYSTEM.md"; $Board = Join-Path $Memory "BOARD.md"; $Notes = Join-Path $Memory "NOTES.md"; $History = Join-Path $Memory "HISTORY.md"
@@ -20,7 +20,7 @@ function Parse-Records([string]$Path) {
     if ($null -ne $Current -and $Line -match '^- Status:\s*(.+)$') { $Current.Status=$Matches[1].Trim().ToLower(); continue }
     if ($null -ne $Current -and $Line -match '^- Completed:\s*(.+)$') { $Current.Completed=$Matches[1].Trim(); continue }
     if ($null -ne $Current -and $Line -match '^- Evidence:\s*(.*)$') { $Current.Evidence=$Matches[1].Trim(); continue }
-    if ($null -ne $Current -and $Line -match '^- (Related|Supersedes|Replacement):\s*(.+)$') { $Current.Related += [regex]::Matches($Matches[2],'(TASK|DEC|REQ|RISK)-\d{4}') | ForEach-Object Value }
+    if ($null -ne $Current -and $Line -match '^- (Related|Supersedes|Replacement):\s*(.+)$') { $Current.Related += @([regex]::Matches($Matches[2],'(TASK|DEC|REQ|RISK)-\d{4}') | ForEach-Object { $_.Value }) }
   }
   return $Records
 }
