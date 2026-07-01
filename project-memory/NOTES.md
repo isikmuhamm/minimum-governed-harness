@@ -36,6 +36,36 @@ A gated release workflow derives every output from `template/`, synchronizes the
 
 Pull-request CI passed Linux, macOS, Windows, and published-template consistency checks. The merge marker started the gated workflow, which created `v0.5.0` only after source/template, fresh-clone, and extracted-archive equality gates. The official release path now publishes the clean ZIP, archive checksum, and per-file checksum manifest from the same canonical payload.
 
+## TASK-0003 — Add handoff adoption and task-linked code trace
+- Status: completed
+- Related: DEC-0005, DEC-0006
+- Last updated: 2026-07-01
+
+### Context
+
+ContextRail governed project-local work after it entered the repository, but it did not define how an external specification, assessment, or handoff package became local Board and Notes records. Source code and principal tests also had no minimal pointer back to the task context that explained why a durable behavior boundary existed.
+
+### Decisions
+
+- Add one generic `handoffs/HANDOFF.md` intake contract. External packages remain staging inputs and are converted into local records before implementation.
+- Add a language-native code comment containing `ContextRail: TASK-####` and a short current invariant at the smallest useful implementation boundary.
+- Reuse the same task marker in the principal regression test when a task establishes or changes testable runtime behavior.
+- Do not create a separate implementation mapping file, semantic retrieval layer, region marker system, or full code-change history.
+
+### Requirements
+
+- Handoff adoption searches and deduplicates before creating local identities.
+- Durable requirements, decisions, risks, rationale, acceptance criteria, and source provenance are captured in Notes.
+- Independently verifiable implementation work is represented as short local Board tasks.
+- Raw handoff packages do not become canonical project memory.
+- Code trace markers resolve to a task with a lifecycle record and Notes detail.
+- Exact duplicate task, decision, requirement, or risk titles under different identities are rejected after normalization.
+- Linux, macOS, and Windows validators implement the same checks.
+
+### Result
+
+The clean template now includes generic handoff staging and adoption guidance, task-linked code trace rules, positive implementation/test mapping fixtures, and cross-platform validators for title identity, orphan records, code-pointer integrity, and nearby invariant text. Pull-request Actions run `28544540035` passed all validation and exact failure-assertion steps on Linux, macOS, and Windows, along with the published-template version guard.
+
 ## DEC-0001 — Separate current truth, work, rationale, and evidence
 - Status: accepted
 - Related: TASK-0000
@@ -75,3 +105,23 @@ On first substantive use, discover the repository's existing native verification
 ### Decision
 
 Keep the GitHub Template Repository as the new-project channel and publish versioned clean ZIP archives from the same `template/` payload. Block release creation unless source, published mirror, and extracted archive are identical.
+
+## DEC-0005 — Adopt external handoffs through local records
+- Status: accepted
+- Related: TASK-0003
+- Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Components, Primary Flows, Boundaries and Sources of Truth, and Invariants
+
+### Decision
+
+Treat external handoff packages as non-canonical staging inputs. Before implementation, deduplicate them against current project memory and convert durable meaning into local Notes records and independently verifiable local Board tasks.
+
+## DEC-0006 — Trace durable code boundaries to one governing task
+- Status: accepted
+- Related: TASK-0003
+- Last updated: 2026-07-01
+- Reflected in: project-memory/SYSTEM.md — Primary Flows, Invariants, and Known Limits
+
+### Decision
+
+Use a minimal language-native comment containing a local `TASK-####` pointer and short current invariant. The pointer identifies the task that best explains the present behavior, not every task that historically touched the code.

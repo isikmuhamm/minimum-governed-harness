@@ -16,12 +16,22 @@ jobs:
         run: sh template/scripts/validate-linux.sh --root template --strict
       - name: Validate ContextRail repository memory
         run: sh template/scripts/validate-linux.sh --root . --strict
-      - name: Confirm invalid fixture is rejected
+      - name: Validate task-linked trace fixture
+        run: sh template/scripts/validate-linux.sh --root tests/fixtures/valid-trace --strict
+      - name: Confirm invalid fixture failures
         run: |
-          if sh template/scripts/validate-linux.sh --root tests/fixtures/invalid; then
+          set +e
+          output="$(sh template/scripts/validate-linux.sh --root tests/fixtures/invalid 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
             echo "Invalid fixture unexpectedly passed"
             exit 1
           fi
+          printf '%s\n' "$output" | grep -F "Duplicate normalized TASK title 'broken task'"
+          printf '%s\n' "$output" | grep -F "TASK-9997 has Notes detail but no Board or History lifecycle record"
+          printf '%s\n' "$output" | grep -F "src/broken.py:1 references TASK-8888 without Board or History lifecycle record"
 
   macos:
     runs-on: macos-latest
@@ -31,12 +41,22 @@ jobs:
         run: sh template/scripts/validate-macos.sh --root template --strict
       - name: Validate ContextRail repository memory
         run: sh template/scripts/validate-macos.sh --root . --strict
-      - name: Confirm invalid fixture is rejected
+      - name: Validate task-linked trace fixture
+        run: sh template/scripts/validate-macos.sh --root tests/fixtures/valid-trace --strict
+      - name: Confirm invalid fixture failures
         run: |
-          if sh template/scripts/validate-macos.sh --root tests/fixtures/invalid; then
+          set +e
+          output="$(sh template/scripts/validate-macos.sh --root tests/fixtures/invalid 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
             echo "Invalid fixture unexpectedly passed"
             exit 1
           fi
+          printf '%s\n' "$output" | grep -F "Duplicate normalized TASK title 'broken task'"
+          printf '%s\n' "$output" | grep -F "TASK-9997 has Notes detail but no Board or History lifecycle record"
+          printf '%s\n' "$output" | grep -F "src/broken.py:1 references TASK-8888 without Board or History lifecycle record"
 
   windows:
     runs-on: windows-latest
@@ -48,13 +68,30 @@ jobs:
       - name: Validate ContextRail repository memory
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root . -Strict
-      - name: Confirm invalid fixture is rejected
+      - name: Validate task-linked trace fixture
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root tests\fixtures\valid-trace -Strict
+      - name: Confirm invalid fixture failures
         shell: powershell
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root tests\fixtures\invalid
-          if ($LASTEXITCODE -eq 0) {
+          $output = & powershell -NoProfile -ExecutionPolicy Bypass -File template\scripts\validate-windows.ps1 -Root tests\fixtures\invalid 2>&1
+          $status = $LASTEXITCODE
+          $text = $output | Out-String
+          Write-Host $text
+          if ($status -eq 0) {
             Write-Error "Invalid fixture unexpectedly passed"
             exit 1
+          }
+          $expected = @(
+            "Duplicate normalized TASK title 'broken task'",
+            "TASK-9997 has Notes detail but no Board or History lifecycle record",
+            "src/broken.py:1 references TASK-8888 without Board or History lifecycle record"
+          )
+          foreach ($message in $expected) {
+            if (-not $text.Contains($message)) {
+              Write-Error "Expected validator finding was not emitted: $message"
+              exit 1
+            }
           }
           exit 0
 

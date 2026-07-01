@@ -24,3 +24,10 @@ Allowed statuses: `completed`, `cancelled`.
 - Related: DEC-0004
 - Evidence: Pull-request Actions run 28522311524 passed Linux, macOS, Windows, and published-template consistency jobs; the gated release workflow created tag `v0.5.0`, whose tagged tree declares version `0.5.0` and contains the synchronized release workflow.
 - Outcome: Added official clean GitHub Release archives in parallel with the Template Repository, with tag/version/changelog agreement, fresh-clone and archive round-trip equality gates, ZIP checksum, per-file manifest, and same-version drift detection.
+
+## TASK-0003 — Add handoff adoption and task-linked code trace
+- Status: completed
+- Completed: 2026-07-01
+- Related: DEC-0005, DEC-0006
+- Evidence: Pull-request Actions run 28544540035 passed clean-template validation, source-repository validation, the valid implementation/test trace fixture, exact invalid-fixture assertions, and the published-template version guard on Linux, macOS, and Windows.
+- Outcome: Added generic external handoff adoption, minimal TASK-plus-invariant code trace for implementation and principal tests, normalized-title identity guards, code-pointer validation, cross-platform fixtures, stable 1.0 documentation, and synchronized 1.0.0 release preparation.

@@ -63,9 +63,34 @@ extract_ids() {
   awk '/^## (TASK|DEC|REQ|RISK)-[0-9][0-9][0-9][0-9][[:space:]]/ {print $2}' "$1"
 }
 
+extract_records() {
+  awk '
+  function normalize(value) {
+    value=tolower(value)
+    gsub(/[^[:alnum:]]+/, " ", value)
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+    gsub(/[[:space:]]+/, " ", value)
+    return value
+  }
+  /^## (TASK|DEC|REQ|RISK)-[0-9][0-9][0-9][0-9][[:space:]]/ {
+    id=$2
+    type=id
+    sub(/-.*/, "", type)
+    title=$0
+    sub(/^## [^[:space:]]+[[:space:]]+/, "", title)
+    sub(/^[—-][[:space:]]*/, "", title)
+    print id "|" type "|" normalize(title)
+  }
+  ' "$1"
+}
+
 extract_ids "$BOARD" > "$TMP/board.ids"
 extract_ids "$NOTES" > "$TMP/notes.ids"
 extract_ids "$HISTORY" > "$TMP/history.ids"
+extract_records "$BOARD" > "$TMP/board.records"
+extract_records "$NOTES" > "$TMP/notes.records"
+extract_records "$HISTORY" > "$TMP/history.records"
+cat "$TMP/board.records" "$TMP/notes.records" "$TMP/history.records" > "$TMP/all.records"
 
 for pair in "Board:$TMP/board.ids" "Notes:$TMP/notes.ids" "History:$TMP/history.ids"; do
   name=${pair%%:*}
@@ -73,6 +98,30 @@ for pair in "Board:$TMP/board.ids" "Notes:$TMP/notes.ids" "History:$TMP/history.
   sort "$file" | uniq -d | while IFS= read -r id; do
     [ -n "$id" ] && error "Duplicate ID in $name: $id"
   done
+done
+
+awk -F'|' '
+$3 != "" {
+  id=$1
+  type=$2
+  title=$3
+  if (id_title[id] == "") id_title[id]=title
+  else if (id_title[id] != title && !inconsistent[id]++)
+    print "I|" id "|" id_title[id] "|" title
+
+  key=type "|" title
+  pair=key "|" id
+  if (!seen_pair[pair]++) {
+    if (first_id[key] == "") first_id[key]=id
+    else if (first_id[key] != id)
+      print "D|" type "|" title "|" first_id[key] "|" id
+  }
+}
+' "$TMP/all.records" | while IFS='|' read -r kind a b c d; do
+  case "$kind" in
+    I) error "$a has inconsistent normalized titles: '$b' and '$c'" ;;
+    D) error "Duplicate normalized $a title '$b' under $c and $d" ;;
+  esac
 done
 
 awk '
@@ -178,10 +227,54 @@ awk 'NR==FNR {known[$1]=1; next} !known[$2] {print $1,$2}' "$TMP/known.ids" "$TM
   error "$source references missing $target"
 done
 
+is_trace_candidate() {
+  path=$1
+  rel=${path#"$ROOT/"}
+  case "$rel" in
+    *.md|*.markdown|*.rst|*.txt|*.lock|*.map|*.min.js|*.min.css|*.png|*.jpg|*.jpeg|*.gif|*.webp|*.ico|*.pdf|*.zip|*.gz|*.tar|*.7z|*.jar|*.dll|*.exe|*.so|*.dylib|*.class|*.pyc|*.pyo|*.wasm)
+      return 1
+      ;;
+    */scripts/validate-linux.sh|*/scripts/validate-macos.sh|*/scripts/validate-windows.ps1)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+find "$ROOT" \
+  \( -type d \( -name .git -o -name node_modules -o -name vendor -o -name dist -o -name build -o -name coverage -o -name project-memory -o -name handoffs -o -name docs -o -name fixtures \) -prune \) -o \
+  -type f -print | while IFS= read -r file; do
+    is_trace_candidate "$file" || continue
+    if ! grep -nE 'ContextRail:[[:space:]]*TASK-' "$file" > "$TMP/trace-lines" 2>/dev/null; then
+      continue
+    fi
+
+    while IFS=: read -r line_number line_text; do
+      rel=${file#"$ROOT/"}
+      if ! printf '%s\n' "$line_text" | grep -Eq 'ContextRail:[[:space:]]*TASK-[0-9]{4}([^0-9]|$)'; then
+        error "$rel:$line_number has malformed ContextRail TASK marker"
+        continue
+      fi
+
+      task=$(printf '%s\n' "$line_text" | sed -n 's/.*ContextRail:[[:space:]]*\(TASK-[0-9][0-9][0-9][0-9]\).*/\1/p')
+      if ! grep -Fqx "$task" "$TMP/lifecycle.unique"; then
+        error "$rel:$line_number references $task without Board or History lifecycle record"
+      fi
+      if ! grep -Fqx "$task" "$TMP/note-tasks.unique"; then
+        error "$rel:$line_number references $task without Notes detail"
+      fi
+
+      end_line=$((line_number + 2))
+      if ! sed -n "${line_number},${end_line}p" "$file" | grep -Eq 'Invariant:[[:space:]]*[^[:space:]]'; then
+        warn "$rel:$line_number has no non-empty Invariant within the next two lines"
+      fi
+    done < "$TMP/trace-lines"
+  done
+
 error_count=$(wc -l < "$ERRORS" | tr -d ' ')
 warning_count=$(wc -l < "$WARNINGS" | tr -d ' ')
 printf '\nSummary: %s error(s), %s warning(s)\n' "$error_count" "$warning_count"
 
 [ "$error_count" -eq 0 ] || exit 1
 [ "$STRICT" -eq 0 ] || [ "$warning_count" -eq 0 ] || exit 2
-echo "PASS  Project memory contract is valid"
+echo "PASS  Project memory and code trace contract is valid"

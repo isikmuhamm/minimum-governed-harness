@@ -12,11 +12,12 @@ On first use, the coding agent should:
 
 1. inspect and preserve the current working tree;
 2. discover the language, build, test, lint, static-analysis, smoke, and CI entrypoints;
-3. populate `SYSTEM.md` only from repository evidence;
-4. record unfinished work in `BOARD.md`;
-5. put task detail and durable rationale in `NOTES.md`;
-6. integrate the matching ContextRail validator into one canonical verification command;
-7. record that command in `AGENTS.md`.
+3. inspect `handoffs/incoming/` and adopt any explicitly provided external package through `handoffs/HANDOFF.md`;
+4. populate `SYSTEM.md` only from repository evidence;
+5. record unfinished work in `BOARD.md`;
+6. put task detail, durable rationale, requirements, decisions, risks, and source provenance in `NOTES.md`;
+7. integrate the matching ContextRail validator into one canonical verification command;
+8. record that command in `AGENTS.md`.
 
 ## Existing repository or pinned version
 
@@ -45,6 +46,9 @@ GEMINI.md
 .github/copilot-instructions.md
 .github/workflows/contextrail.yml
 .cursor/rules/00-agents.mdc
+handoffs/HANDOFF.md
+handoffs/incoming/.gitkeep
+handoffs/processed/.gitkeep
 project-memory/
 scripts/validate-linux.sh
 scripts/validate-macos.sh
@@ -56,9 +60,45 @@ Convert existing information by role:
 - current implemented architecture and boundaries -> `SYSTEM.md`;
 - unfinished tasks -> `BOARD.md`;
 - task detail and durable rationale -> `NOTES.md`;
-- completed work and verification -> `HISTORY.md`.
+- completed work and verification -> `HISTORY.md`;
+- external specifications and work packages awaiting adoption -> `handoffs/incoming/`.
 
-Do not migrate every historical note on day one. Start with current truth, active work, and decisions required to continue safely.
+Do not migrate every historical note on day one. Start with current truth, active work, decisions required to continue safely, and any external package that directly governs the requested implementation.
+
+## External package adoption
+
+Place each external package under one stable path:
+
+```text
+handoffs/incoming/<package-id>/
+```
+
+Then instruct the coding agent to follow `handoffs/HANDOFF.md` before implementation. The agent should:
+
+1. search current local records and relevant code;
+2. detect overlap and conflicts;
+3. preserve external identifiers as provenance;
+4. convert durable requirements, decisions, risks, acceptance criteria, and rationale into Notes;
+5. create one short local task per independently verifiable unfinished outcome;
+6. run canonical validation;
+7. move the source package to `processed/` only when retention remains useful, or remove it according to repository policy.
+
+The raw package is not project memory. Board and Notes become the governed working context.
+
+## Task-linked code trace adoption
+
+Use task-linked comments only for durable behavior boundaries, not every edited line.
+
+```text
+ContextRail: TASK-0042
+Invariant: Persistent mutation requires explicit authorization.
+```
+
+Place the comment before the declaration when the task governs the entire symbol, or before the narrow block or statement when it governs only that behavior. Add the same task marker to the principal regression test when the behavior is testable.
+
+The marker identifies the task that best explains the current behavior. Do not append every task that historically touched the function. Mechanical refactors that preserve the behavior contract do not replace the pointer.
+
+Commentless formats, generated output, vendor sources, binaries, and lock files should not be modified for traceability. Record those boundaries in the corresponding Notes task instead.
 
 ## Template and release equivalence
 
@@ -75,12 +115,12 @@ When the source and published repositories declare the same version, normal CI f
 
 ## Verification integration
 
-The standalone `.github/workflows/contextrail.yml` is an initial safety net. It validates memory on push and pull request.
+The standalone `.github/workflows/contextrail.yml` is an initial safety net. It validates memory and task-linked code-reference integrity on push and pull request.
 
 When a repository already has established CI:
 
 1. add the matching ContextRail validator to the existing canonical verification job;
-2. ensure the local canonical command runs both native project checks and memory validation;
+2. ensure the local canonical command runs both native project checks and ContextRail validation;
 3. remove the standalone ContextRail workflow if it would duplicate the same validation.
 
 Do not create a second independent test system.
@@ -109,7 +149,7 @@ The scripts use operating-system-provided utilities and require no project-langu
 
 ## Minimal conceptual core
 
-The conceptual core is:
+The bounded project-memory core remains:
 
 ```text
 AGENTS.md
@@ -119,4 +159,6 @@ project-memory/NOTES.md
 project-memory/HISTORY.md
 ```
 
-The published template also includes small tool adapters, OS-native validators, and a minimal CI safety net so users do not need to decide what to delete.
+`handoffs/HANDOFF.md` is the generic external-intake contract, and native code comments provide minimal implementation pointers into that core. Neither creates another canonical memory store.
+
+The published template also includes small tool adapters, OS-native validators, a minimal CI safety net, and empty handoff staging directories so users do not need to design the integration surface themselves.
