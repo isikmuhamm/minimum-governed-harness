@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag, for example v0.6.0
+        description: Release tag, for example v1.0.0
         required: true
         type: string
   push:
@@ -108,9 +108,23 @@ jobs:
           fi
 
           rsync -a --delete --exclude=.git source/template/ published/
+          install -m 0644 source/template/.contextrail-version published/.contextrail-version
+
           git -C published config user.name "ContextRail Publisher"
           git -C published config user.email "actions@users.noreply.github.com"
           git -C published add -A
+          git -C published add -f .contextrail-version
+
+          published_worktree_version="$(tr -d '[:space:]' < published/.contextrail-version)"
+          staged_version="$(git -C published show :.contextrail-version | tr -d '[:space:]')"
+          if [ "$published_worktree_version" != "$RELEASE_VERSION" ]; then
+            echo "Published worktree declares $published_worktree_version instead of $RELEASE_VERSION." >&2
+            exit 1
+          fi
+          if [ "$staged_version" != "$RELEASE_VERSION" ]; then
+            echo "Staged template declares $staged_version instead of $RELEASE_VERSION." >&2
+            exit 1
+          fi
 
           if git -C published diff --cached --quiet; then
             echo "No publishable changes remained after synchronization."
@@ -130,6 +144,7 @@ jobs:
           source_version="$(tr -d '[:space:]' < source/template/.contextrail-version)"
           published_version="$(tr -d '[:space:]' < verified-template/.contextrail-version)"
           test "$source_version" = "$published_version"
+          test "$published_version" = "$RELEASE_VERSION"
 
       - name: Build and verify release archive
         run: |
